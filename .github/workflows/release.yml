@@ -23,7 +23,7 @@ jobs:
         uses: thatisuday/go-build-action@v1
         with:
           platforms: "linux/amd64, darwin/amd64, windows/amd64"
-          name: "tree"
+          name: "portainerssh"
           compress: "true"
           dest: "dist"
 
