@@ -18,8 +18,7 @@ import (
 )
 
 const (
-	// TODO: Fix author/license
-	VERSION = "0.0.1"
+	VERSION = "0.0.2"
 	AUTHOR  = "Vadym Abramchuk <vadym+portainerssh@dev-branch.com>"
 	// TODO: Implement fuzzy match and update description.
 	USAGE = `
