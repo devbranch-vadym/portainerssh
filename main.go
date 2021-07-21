@@ -22,7 +22,7 @@ const (
 	VERSION = "0.0.1"
 	AUTHOR  = "Vadym Abramchuk <vadym+portainerssh@dev-branch.com>"
 	// TODO: Implement fuzzy match and update description.
-	USAGE   = `
+	USAGE = `
 Example:
     portainerssh my-server-1
     portainerssh "my-server*"  (equals to) portainerssh my-server%
@@ -137,12 +137,16 @@ func (w *WebTerm) Run() {
 	}
 }
 
-func (r *PortainerAPI) formatEndpoint() string {
+func (r *PortainerAPI) formatHttpEndpoint() string {
 	if r.Endpoint[len(r.Endpoint)-1:len(r.Endpoint)] == "/" {
 		return r.Endpoint[0 : len(r.Endpoint)-1]
 	} else {
 		return r.Endpoint
 	}
+}
+
+func (r *PortainerAPI) formatWsEndpoint() string {
+	return "ws" + strings.TrimPrefix(r.formatHttpEndpoint(), "http")
 }
 
 func (r *PortainerAPI) makeObjReq(req *http.Request, useAuth bool) (map[string]interface{}, error) {
@@ -207,7 +211,7 @@ func (r *PortainerAPI) getJwt() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		req, _ := http.NewRequest("POST", r.formatEndpoint()+"/auth", bytes.NewReader(body))
+		req, _ := http.NewRequest("POST", r.formatHttpEndpoint()+"/auth", bytes.NewReader(body))
 
 		resp, err := r.makeObjReq(req, false)
 		if err != nil {
@@ -221,7 +225,7 @@ func (r *PortainerAPI) getJwt() (string, error) {
 }
 
 func (r *PortainerAPI) getContainerId(name string) string {
-	req, _ := http.NewRequest("GET", r.formatEndpoint()+"/endpoints/1/docker/containers/json", nil)
+	req, _ := http.NewRequest("GET", r.formatHttpEndpoint()+"/endpoints/1/docker/containers/json", nil)
 	resp, err := r.makeArrReq(req, true)
 	if err != nil {
 		fmt.Println("Failed to communicate with Portainer API: " + err.Error())
@@ -267,7 +271,7 @@ func (r *PortainerAPI) getExecEndpointId(containerId string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req, _ := http.NewRequest("POST", r.formatEndpoint()+"/endpoints/1/docker/containers/"+containerId+"/exec", bytes.NewReader(body))
+	req, _ := http.NewRequest("POST", r.formatHttpEndpoint()+"/endpoints/1/docker/containers/"+containerId+"/exec", bytes.NewReader(body))
 	resp, err := r.makeObjReq(req, true)
 
 	if err != nil {
@@ -295,12 +299,11 @@ func (r *PortainerAPI) getWsUrl(containerId string) string {
 	//resp, err := r.makeObjReq(req, true)
 	jwt, _ := r.getJwt()
 
-	// TODO: Fix API URL
-	return "ws://localhost:9000/api/websocket/exec?token=" + jwt + "&endpointId=1&id=" + endpointId
+	return r.formatWsEndpoint() + "/websocket/exec?token=" + jwt + "&endpointId=1&id=" + endpointId
 }
 
 func (r *PortainerAPI) getWSConn(wsUrl string) *websocket.Conn {
-	endpoint := r.formatEndpoint()
+	endpoint := r.formatHttpEndpoint()
 	header := http.Header{}
 	header.Add("Origin", endpoint)
 	conn, _, err := websocket.DefaultDialer.Dial(wsUrl, header)
