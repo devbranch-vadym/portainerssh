@@ -1,7 +1,3 @@
-```
-TODO: Update README
-```
-
 Portainer SSH
 ===========
 
