@@ -5,82 +5,95 @@ TODO: Update README
 Portainer SSH
 ===========
 
-Native SSH Client for Rancher Containers, provided a powerful native terminal to manage your docker containers
+Native shell client for Portainer containers, provided a powerful native terminal to manage your Docker containers.
 
-  * It's dead simple. like the ssh cli, you do `rancherssh container_name` to SSH into any containers
-  * It's flexible. rancherssh reads configurations from ENV, from yml or json file
-  * It's powerful. rancherssh searches the whole rancher deployment, SSH into any containers from your workstation, regardless which host it belongs to
-  * It's smart. rancherssh uses fuzzy container name matching. Forget the container name? it doesn't matter, use "*" or "%" instead
+* It's dead simple. like the ssh cli, you do `portainerssh container_name` to SSH into any containers
+* It's flexible. `portainerssh` reads configurations from ENV, from yml or json file
+* It's powerful. `portainerssh` searches the whole Portainer deployment, open shell into any containers from your
+  workstation, regardless which host it belongs to
+* It's smart. `portainerssh` uses fuzzy container name matching. Forget the container name? it doesn't matter, use "*"
+  or "%" instead
 
-[![asciicast](demo.gif)](https://asciinema.org/a/83555)
+Is it really an SSH client?
+============
+No. It's called so for historical purposes. It _acts_ like SSH in terms of providing you shell access to your
+containers. Also SSH is what people are likely googling for.
 
-[![asciicast](https://asciinema.org/a/83555.png)](https://asciinema.org/a/83555)
 
 Installation
 ============
 
-**Homebrew**
+**Via Golang**
 
-`# brew install fangli/dev/rancherssh`
+`# go get github.com/devbranch-vadym/portainerssh`
 
+**Binary builds**
 
-**Or via Golang**
+Sorry, not there yet.
 
-`# go get github.com/fangli/rancherssh`
-
-
-
-usage
+Usage
 =====
 
-`rancherssh [<flags>] <container>`
+`portainerssh [<flags>] <container>`
 
 Example
 =======
 
-  rancherssh my-server-1
-  
-  rancherssh "my-server*"  (equals to) rancherssh my-server%
-  
-  rancherssh %proxy%
-  
-  rancherssh "projectA-app-*" (equals to) rancherssh projectA-app-%
+```
+portainerssh my-container-name
+```
 
 Configuration
 =============
 
-  We read configuration from config.json or config.yml in ./, /etc/rancherssh/ and ~/.rancherssh/ folders.
+The configuration could be read from `config.json` or `config.yml` in `./`, `/etc/portainerssh/` or `~/.portainerssh/` folders.
 
-  If you want to use JSON format, create a config.json in the folders with content:
+If you want to use JSON format, create a `config.json` in the folders with content:
 
-      {
-          "endpoint": "https://rancher.server/v1", // Or "https://rancher.server/v1/projects/xxxx"
-          "user": "your_access_key",
-          "password": "your_access_password"
-      }
+```json
+{
+  "endpoint": "https://portainerssh.server/api",
+  "user": "your_access_key",
+  "password": "your_access_password"
+}
+```
 
-  If you want to use YAML format, create a config.yml with content:
+If you want to use YAML format, create a `config.yml` with content:
 
-      endpoint: https://your.rancher.server/v1 // Or https://rancher.server/v1/projects/xxxx
-      user: your_access_key
-      password: your_access_password
+```yml
+endpoint: https://your.portainer.server/api
+user: your_access_key
+password: your_access_password
+```
 
-  We accept environment variables as well:
+We accept environment variables as well:
 
-      SSHRANCHER_ENDPOINT=https://your.rancher.server/v1   // Or https://rancher.server/v1/projects/xxxx
-      SSHRANCHER_USER=your_access_key
-      SSHRANCHER_PASSWORD=your_access_password
-
+```shell
+PORTAINER_ENDPOINT=https://your.portainer.server/api
+PORTAINER_USER=your_access_key
+PORTAINER_PASSWORD=your_access_password
+```
 
 Flags
 =====
 
-      -h, --help         Show context-sensitive help (also try --help-long and --help-man).
+```
+  -h, --help         Show context-sensitive help (also try --help-long and --help-man).
       --version      Show application version.
-      --endpoint=""  Rancher server endpoint, https://your.rancher.server/v1 or https://your.rancher.server/v1/projects/xxx.
-      --user=""      Rancher API user/accesskey.
-      --password=""  Rancher API password/secret.
+      --endpoint=""  Portainer server endpoint, https://your.portainer.server/api .
+      --user=""      Portainer API user/accesskey.
+      --password=""  Portainer API password/secret.
+```
 
 **Args**
 
 `<container>  Container name, fuzzy match`
+
+Limitations
+=====
+Currently only first Docker instance is supported.
+
+History
+=====
+`portainerssh` is based on wonderful `rancherssh` utility by Fang Li. In fact, `portainerssh` is a fork and partial
+rewrite of `rancherssh`, just for Portainer.
