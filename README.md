@@ -2,7 +2,7 @@
 TODO: Update README
 ```
 
-Rancher SSH
+Portainer SSH
 ===========
 
 Native SSH Client for Rancher Containers, provided a powerful native terminal to manage your docker containers
