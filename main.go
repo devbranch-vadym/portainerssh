@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/base64"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -18,34 +18,36 @@ import (
 )
 
 const (
-	VERSION = "1.1.3"
-	AUTHOR  = "FANG LI <surivlee+rancherssh@gmail.com>"
+	// TODO: Fix author/license
+	VERSION = "0.0.1"
+	AUTHOR  = "Vadym Abramchuk <vadym+portainerssh@dev-branch.com>"
+	// TODO: Implement fuzzy match and update description.
 	USAGE   = `
 Example:
-    rancherssh my-server-1
-    rancherssh "my-server*"  (equals to) rancherssh my-server%
-    rancherssh %proxy%
-    rancherssh "projectA-app-*" (equals to) rancherssh projectA-app-%
+    portainerssh my-server-1
+    portainerssh "my-server*"  (equals to) portainerssh my-server%
+    portainerssh %proxy%
+    portainerssh "projectA-app-*" (equals to) portainerssh projectA-app-%
 
 Configuration:
-    We read configuration from config.json or config.yml in ./, /etc/rancherssh/ and ~/.rancherssh/ folders.
+    We read configuration from config.json or config.yml in ./, /etc/portainerssh/ and ~/.portainerssh/ folders.
 
     If you want to use JSON format, create a config.json in the folders with content:
         {
-            "endpoint": "https://rancher.server/v1", // Or "https://rancher.server/v1/projects/xxxx"
+            "endpoint": "https://portainerssh.server/api",
             "user": "your_access_key",
             "password": "your_access_password"
         }
 
     If you want to use YAML format, create a config.yml with content:
-        endpoint: https://your.rancher.server/v1 // Or https://rancher.server/v1/projects/xxxx
+        endpoint: https://your.portainer.server/api
         user: your_access_key
         password: your_access_password
 
     We accept environment variables as well:
-        SSHRANCHER_ENDPOINT=https://your.rancher.server/v1   // Or https://rancher.server/v1/projects/xxxx
-        SSHRANCHER_USER=your_access_key
-        SSHRANCHER_PASSWORD=your_access_password
+        PORTAINER_ENDPOINT=https://your.portainer.server/api
+        PORTAINER_USER=your_access_key
+        PORTAINER_PASSWORD=your_access_password
 `
 )
 
@@ -56,10 +58,11 @@ type Config struct {
 	Password  string
 }
 
-type RancherAPI struct {
+type PortainerAPI struct {
 	Endpoint string
 	User     string
 	Password string
+	Jwt      string
 }
 
 type WebTerm struct {
@@ -69,7 +72,6 @@ type WebTerm struct {
 }
 
 func (w *WebTerm) wsWrite() {
-	var payload string
 	var err error
 	var keybuf [1]byte
 	for {
@@ -79,8 +81,7 @@ func (w *WebTerm) wsWrite() {
 			return
 		}
 
-		payload = base64.StdEncoding.EncodeToString(keybuf[0:1])
-		err = w.SocketConn.WriteMessage(websocket.BinaryMessage, []byte(payload))
+		err = w.SocketConn.WriteMessage(websocket.BinaryMessage, keybuf[0:1])
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 				w.errChn <- nil
@@ -95,7 +96,6 @@ func (w *WebTerm) wsWrite() {
 func (w *WebTerm) wsRead() {
 	var err error
 	var raw []byte
-	var out []byte
 	for {
 		_, raw, err = w.SocketConn.ReadMessage()
 		if err != nil {
@@ -106,12 +106,7 @@ func (w *WebTerm) wsRead() {
 			}
 			return
 		}
-		out, err = base64.StdEncoding.DecodeString(string(raw))
-		if err != nil {
-			w.errChn <- err
-			return
-		}
-		os.Stdout.Write(out)
+		os.Stdout.Write(raw)
 	}
 }
 
@@ -142,7 +137,7 @@ func (w *WebTerm) Run() {
 	}
 }
 
-func (r *RancherAPI) formatEndpoint() string {
+func (r *PortainerAPI) formatEndpoint() string {
 	if r.Endpoint[len(r.Endpoint)-1:len(r.Endpoint)] == "/" {
 		return r.Endpoint[0 : len(r.Endpoint)-1]
 	} else {
@@ -150,10 +145,42 @@ func (r *RancherAPI) formatEndpoint() string {
 	}
 }
 
-func (r *RancherAPI) makeReq(req *http.Request) (map[string]interface{}, error) {
+func (r *PortainerAPI) makeObjReq(req *http.Request, useAuth bool) (map[string]interface{}, error) {
+	body, err := r.makeReq(req, useAuth)
+	if err != nil {
+		return nil, err
+	}
+
+	var apiResp map[string]interface{}
+	if err = json.Unmarshal(body, &apiResp); err != nil {
+		return nil, err
+	}
+	return apiResp, nil
+}
+
+func (r *PortainerAPI) makeArrReq(req *http.Request, useAuth bool) ([]map[string]interface{}, error) {
+	body, err := r.makeReq(req, useAuth)
+	if err != nil {
+		return nil, err
+	}
+
+	var apiResp []map[string]interface{}
+	if err = json.Unmarshal(body, &apiResp); err != nil {
+		return nil, err
+	}
+	return apiResp, nil
+}
+
+func (r *PortainerAPI) makeReq(req *http.Request, useAuth bool) ([]byte, error) {
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
-	req.SetBasicAuth(r.User, r.Password)
+	if useAuth {
+		jwt, err := r.getJwt()
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add("Authorization", "Bearer "+jwt)
+	}
 
 	cli := http.Client{}
 	resp, err := cli.Do(req)
@@ -167,26 +194,47 @@ func (r *RancherAPI) makeReq(req *http.Request) (map[string]interface{}, error) 
 	}
 	resp.Body.Close()
 
-	var tokenResp map[string]interface{}
-	if err = json.Unmarshal(body, &tokenResp); err != nil {
-		return nil, err
-	}
-	return tokenResp, nil
+	return body, nil
 }
 
-func (r *RancherAPI) containerUrl(name string) string {
-	req, _ := http.NewRequest("GET", r.formatEndpoint()+"/containers/", nil)
-	q := req.URL.Query()
-	q.Add("name_like", strings.Replace(name, "*", "%", -1))
-	q.Add("state", "running")
-	q.Add("kind", "container")
-	req.URL.RawQuery = q.Encode()
-	resp, err := r.makeReq(req)
+func (r *PortainerAPI) getJwt() (string, error) {
+	if r.Jwt == "" {
+		jsonBodyData := map[string]interface{}{
+			"username": r.User,
+			"password": r.Password,
+		}
+		body, err := json.Marshal(jsonBodyData)
+		if err != nil {
+			return "", err
+		}
+		req, _ := http.NewRequest("POST", r.formatEndpoint()+"/auth", bytes.NewReader(body))
+
+		resp, err := r.makeObjReq(req, false)
+		if err != nil {
+			return "", err
+		}
+
+		r.Jwt = resp["jwt"].(string)
+	}
+
+	return r.Jwt, nil
+}
+
+func (r *PortainerAPI) getContainerId(name string) string {
+	req, _ := http.NewRequest("GET", r.formatEndpoint()+"/endpoints/1/docker/containers/json", nil)
+	resp, err := r.makeArrReq(req, true)
 	if err != nil {
-		fmt.Println("Failed to communicate with rancher API: " + err.Error())
+		fmt.Println("Failed to communicate with Portainer API: " + err.Error())
 		os.Exit(1)
 	}
-	data := resp["data"].([]interface{})
+
+	var data []map[string]interface{}
+	for _, row := range resp {
+		if strings.Contains(row["Names"].([]interface{})[0].(string), name) {
+			data = append(data, row)
+		}
+	}
+
 	var choice = 1
 	if len(data) == 0 {
 		fmt.Println("Container " + name + " not existed in system, not running, or you don't have access permissions.")
@@ -194,45 +242,64 @@ func (r *RancherAPI) containerUrl(name string) string {
 	}
 	if len(data) > 1 {
 		fmt.Println("We found more than one containers in system:")
-		for i, _ctn := range data {
-			ctn := _ctn.(map[string]interface{})
-			if _, ok := ctn["data"]; ok {
-				fmt.Println(fmt.Sprintf("[%d] %s, Container ID %s in project %s, IP Address %s on Host %s", i+1, ctn["name"].(string), ctn["id"].(string), ctn["accountId"].(string), ctn["data"].(map[string]interface{})["fields"].(map[string]interface{})["primaryIpAddress"].(string), ctn["data"].(map[string]interface{})["fields"].(map[string]interface{})["dockerHostIp"].(string)))
-			} else {
-				fmt.Println(fmt.Sprintf("[%d] %s, Container ID %s in project %s, IP Address %s", i+1, ctn["name"].(string), ctn["id"].(string), ctn["accountId"].(string), ctn["primaryIpAddress"].(string)))
-			}
+		for i, ctn := range data {
+			fmt.Println(fmt.Sprintf("[%d] Container: %s, ID %s", i+1, ctn["Names"].([]interface{})[0].(string), ctn["Id"].(string)))
 		}
 		fmt.Println("--------------------------------------------")
 		fmt.Print("Which one you want to connect: ")
 		fmt.Scan(&choice)
 	}
-	ctn := data[choice-1].(map[string]interface{})
-	if _, ok := ctn["data"]; ok {
-		fmt.Println(fmt.Sprintf("Target Container: %s, ID %s in project %s, Addr %s on Host %s", ctn["name"].(string), ctn["id"].(string), ctn["accountId"].(string), ctn["data"].(map[string]interface{})["fields"].(map[string]interface{})["primaryIpAddress"].(string), ctn["data"].(map[string]interface{})["fields"].(map[string]interface{})["dockerHostIp"].(string)))
-	} else {
-		fmt.Println(fmt.Sprintf("Target Container: %s, ID %s in project %s, Addr %s", ctn["name"].(string), ctn["id"].(string), ctn["accountId"].(string), ctn["primaryIpAddress"].(string)))
-	}
-	return r.formatEndpoint() + fmt.Sprintf(
-		"/containers/%s/", ctn["id"].(string))
+	ctn := data[choice-1]
+	fmt.Println(fmt.Sprintf("Target Container: %s, ID %s", ctn["Names"].([]interface{})[0].(string), ctn["Id"].(string)))
+	return ctn["Id"].(string)
 }
 
-func (r *RancherAPI) getWsUrl(url string) string {
-	cols, rows, _ := terminal.GetSize(int(os.Stdin.Fd()))
-	req, _ := http.NewRequest("POST", url+"?action=execute",
-		strings.NewReader(fmt.Sprintf(
-			`{"attachStdin":true, "attachStdout":true,`+
-				`"command":["/bin/sh", "-c", "TERM=xterm-256color; export TERM; `+
-				`stty cols %d rows %d; `+
-				`[ -x /bin/bash ] && ([ -x /usr/bin/script ] && /usr/bin/script -q -c \"/bin/bash\" /dev/null || exec /bin/bash) || exec /bin/sh"], "tty":true}`, cols, rows)))
-	resp, err := r.makeReq(req)
+func (r *PortainerAPI) getExecEndpointId(containerId string) (string, error) {
+	jsonBodyData := map[string]interface{}{
+		"AttachStdin":  true,
+		"AttachStdout": true,
+		"AttachStderr": true,
+		"Cmd":          []string{"bash"},
+		"Tty":          true,
+		"id":           containerId,
+	}
+	body, err := json.Marshal(jsonBodyData)
 	if err != nil {
-		fmt.Println("Failed to get access token: ", err.Error())
+		return "", err
+	}
+	req, _ := http.NewRequest("POST", r.formatEndpoint()+"/endpoints/1/docker/containers/"+containerId+"/exec", bytes.NewReader(body))
+	resp, err := r.makeObjReq(req, true)
+
+	if err != nil {
+		return "", err
+	}
+
+	return resp["Id"].(string), nil
+}
+
+func (r *PortainerAPI) getWsUrl(containerId string) string {
+	endpointId, err := r.getExecEndpointId(containerId)
+	if err != nil {
+		fmt.Println("Failed to run exec on container: ", err.Error())
 		os.Exit(1)
 	}
-	return resp["url"].(string) + "?token=" + resp["token"].(string)
+
+	// TODO: Implement terminal resize request as well as resizing in runtime.
+	//cols, rows, _ := terminal.GetSize(int(os.Stdin.Fd()))
+	//req, _ := http.NewRequest("POST", containerId+"?action=execute",
+	//	strings.NewReader(fmt.Sprintf(
+	//		`{"attachStdin":true, "attachStdout":true,`+
+	//			`"command":["/bin/sh", "-c", "TERM=xterm-256color; export TERM; `+
+	//			`stty cols %d rows %d; `+
+	//			`[ -x /bin/bash ] && ([ -x /usr/bin/script ] && /usr/bin/script -q -c \"/bin/bash\" /dev/null || exec /bin/bash) || exec /bin/sh"], "tty":true}`, cols, rows)))
+	//resp, err := r.makeObjReq(req, true)
+	jwt, _ := r.getJwt()
+
+	// TODO: Fix API URL
+	return "ws://localhost:9000/api/websocket/exec?token=" + jwt + "&endpointId=1&id=" + endpointId
 }
 
-func (r *RancherAPI) getWSConn(wsUrl string) *websocket.Conn {
+func (r *PortainerAPI) getWSConn(wsUrl string) *websocket.Conn {
 	endpoint := r.formatEndpoint()
 	header := http.Header{}
 	header.Add("Origin", endpoint)
@@ -244,17 +311,17 @@ func (r *RancherAPI) getWSConn(wsUrl string) *websocket.Conn {
 	return conn
 }
 
-func (r *RancherAPI) GetContainerConn(name string) *websocket.Conn {
+func (r *PortainerAPI) GetContainerConn(name string) *websocket.Conn {
 	fmt.Println("Searching for container " + name)
-	url := r.containerUrl(name)
+	containerId := r.getContainerId(name)
 	fmt.Println("Getting access token")
-	wsurl := r.getWsUrl(url)
-	fmt.Println("SSH into container ...")
+	wsurl := r.getWsUrl(containerId)
+	fmt.Println("Connecting to a shell ...")
 	return r.getWSConn(wsurl)
 }
 
 func ReadConfig() *Config {
-	app := kingpin.New("rancherssh", USAGE)
+	app := kingpin.New("portainerssh", USAGE)
 	app.Author(AUTHOR)
 	app.Version(VERSION)
 	app.HelpFlag.Short('h')
@@ -263,18 +330,19 @@ func ReadConfig() *Config {
 	viper.SetDefault("user", "")
 	viper.SetDefault("password", "")
 
-	viper.SetConfigName("config")            // name of config file (without extension)
-	viper.AddConfigPath(".")                 // call multiple times to add many search paths
-	viper.AddConfigPath("$HOME/.rancherssh") // call multiple times to add many search paths
-	viper.AddConfigPath("/etc/rancherssh/")  // path to look for the config file in
+	viper.SetConfigName("config")              // name of config file (without extension)
+	viper.AddConfigPath(".")                   // call multiple times to add many search paths
+	viper.AddConfigPath("$HOME/.portainerssh") // call multiple times to add many search paths
+	viper.AddConfigPath("/etc/portainerssh/")  // path to look for the config file in
 	viper.ReadInConfig()
 
-	viper.SetEnvPrefix("rancherssh")
+	viper.SetEnvPrefix("portainer")
 	viper.AutomaticEnv()
 
-	var endpoint = app.Flag("endpoint", "Rancher server endpoint, https://your.rancher.server/v1 or https://your.rancher.server/v1/projects/xxx.").Default(viper.GetString("endpoint")).String()
-	var user = app.Flag("user", "Rancher API user/accesskey.").Default(viper.GetString("user")).String()
-	var password = app.Flag("password", "Rancher API password/secret.").Default(viper.GetString("password")).String()
+	var endpoint = app.Flag("endpoint", "Portainer server endpoint, https://your.portainer.server/api .").Default(viper.GetString("endpoint")).String()
+	var user = app.Flag("user", "Portainer API user/accesskey.").Default(viper.GetString("user")).String()
+	var password = app.Flag("password", "Portainer API password/secret.").Default(viper.GetString("password")).String()
+	// TODO: Implement fuzzy match
 	var container = app.Arg("container", "Container name, fuzzy match").Required().String()
 
 	app.Parse(os.Args[1:])
@@ -295,12 +363,12 @@ func ReadConfig() *Config {
 
 func main() {
 	config := ReadConfig()
-	rancher := RancherAPI{
+	portainer := PortainerAPI{
 		Endpoint: config.Endpoint,
 		User:     config.User,
 		Password: config.Password,
 	}
-	conn := rancher.GetContainerConn(config.Container)
+	conn := portainer.GetContainerConn(config.Container)
 
 	wt := WebTerm{
 		SocketConn: conn,

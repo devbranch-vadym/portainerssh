@@ -1,12 +1,10 @@
 # Authors
 
-This project is written and maintained by Fang Li, Funplus and
-various contributors:
+This project was originally forked from a great tool called Rancher SSH. 
 
+# Original Rancher SSH credits
 
-## Rancher SSH
+## Authors
 
-- Fang Li
-
-
-## Contributors
+Rancher SSH was written and is maintained by Fang Li, Funplus and
+various contributors.
