@@ -16,11 +16,15 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/spf13/viper"
+
+	_ "embed"
 )
 
+//go:embed version.txt
+var VERSION string
+
 const (
-	VERSION = "0.0.2"
-	AUTHOR  = "Vadym Abramchuk <vadym+portainerssh@dev-branch.com>"
+	AUTHOR = "Vadym Abramchuk <vadym+portainerssh@dev-branch.com>"
 	// TODO: Implement fuzzy match and update description.
 	USAGE = `
 Example:
@@ -330,7 +334,7 @@ func (r *PortainerAPI) GetContainerConn(name string, command string) *websocket.
 func ReadConfig() *Config {
 	app := kingpin.New("portainerssh", USAGE)
 	app.Author(AUTHOR)
-	app.Version(VERSION)
+	app.Version(strings.TrimSpace(VERSION))
 	app.HelpFlag.Short('h')
 
 	viper.SetDefault("api_url", "")
