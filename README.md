@@ -48,7 +48,7 @@ If you want to use JSON format, create a `config.json` in the folders with conte
 
 ```json
 {
-  "endpoint": "https://portainerssh.server/api",
+  "api_url": "https://portainerssh.server/api",
   "user": "your_access_key",
   "password": "your_access_password"
 }
@@ -57,7 +57,7 @@ If you want to use JSON format, create a `config.json` in the folders with conte
 If you want to use YAML format, create a `config.yml` with content:
 
 ```yml
-endpoint: https://your.portainer.server/api
+api_url: https://your.portainer.server/api
 user: your_access_key
 password: your_access_password
 ```
@@ -65,7 +65,7 @@ password: your_access_password
 We accept environment variables as well:
 
 ```shell
-PORTAINER_ENDPOINT=https://your.portainer.server/api
+PORTAINER_API_URL=https://your.portainer.server/api
 PORTAINER_USER=your_access_key
 PORTAINER_PASSWORD=your_access_password
 ```
@@ -76,7 +76,7 @@ Flags
 ```
   -h, --help         Show context-sensitive help (also try --help-long and --help-man).
       --version      Show application version.
-      --endpoint=""  Portainer server endpoint, https://your.portainer.server/api .
+      --api_url=""   Portainer server API URL, https://your.portainer.server/api .
       --user=""      Portainer API user/accesskey.
       --password=""  Portainer API password/secret.
 ```
