@@ -43,14 +43,14 @@ jobs:
       - name: Run Go vet
         env:
           GOOS: ${{ matrix.go-os }}
-          GOARCH: ${{ matrix.go-arch }
+          GOARCH: ${{ matrix.go-arch }}
         run: go vet .
 
       # step 4: run Go build
       - name: Run Go build
         env:
           GOOS: ${{ matrix.go-os }}
-          GOARCH: ${{ matrix.go-arch }
+          GOARCH: ${{ matrix.go-arch }}
         run: go build
 
       # step 5: create dist
