@@ -1,0 +1,84 @@
+# workflow name
+name: Go Build
+
+# on events
+on:
+  pull_request:
+    branches:
+      - master
+  release:
+    types:
+      - created
+
+# jobs
+jobs:
+  cross-platform-build:
+    strategy:
+      matrix:
+        include:
+          - go-os: linux
+            go-arch: amd64
+          - go-os: linux
+            go-arch: arm64
+          - go-os: windows
+            go-arch: amd64
+          - go-os: darwin
+            go-arch: amd64
+          - go-os: darwin
+            go-arch: arm64
+    runs-on: ubuntu-latest
+
+    steps:
+      # step 1: checkout repository code
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+
+      # step 2: install Go
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.16.0
+
+      # step 3: run Go vet
+      - name: Run Go vet
+        env:
+          GOOS: ${{ matrix.go-os }}
+          GOARCH: ${{ matrix.go-arch }}
+        run: go vet .
+
+      # step 4: create dist
+      - name: Prepare files to archive
+        run: |
+          mkdir -p dist
+          cp README.md LICENSE dist/
+        shell: bash
+
+      # step 5: run Go build
+      - name: Run Go build
+        env:
+          GOOS: ${{ matrix.go-os }}
+          GOARCH: ${{ matrix.go-arch }}
+        run: go build -v -o dist/
+
+      # step 6: store the build version
+      - name: Store build version
+        if: ${{ github.event_name == 'release' && github.event.action == 'created' }}
+        run: |
+          echo "BUILD_VERSION=`cat version.txt`" >> $GITHUB_ENV
+
+      # step 7: create release archive
+      - name: Create release archive
+        if: ${{ github.event_name == 'release' && github.event.action == 'created' }}
+        uses: ihiroky/archive-action@v1
+        with:
+          root_dir: dist
+          file_path: portainerssh-${{ matrix.go-os }}-${{ matrix.go-arch }}-${{ env.BUILD_VERSION }}.tar.gz
+
+      # step 8: upload build-artifacts
+      - name: Upload build-artifacts
+        if: ${{ github.event_name == 'release' && github.event.action == 'created' }}
+        uses: skx/github-action-publish-binaries@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: "./dist/*.tar.gz"
