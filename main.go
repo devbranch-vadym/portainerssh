@@ -33,18 +33,18 @@ Configuration:
 
     If you want to use JSON format, create a config.json in the folders with content:
         {
-            "endpoint": "https://portainerssh.server/api",
+            "api_url": "https://portainerssh.server/api",
             "user": "your_access_key",
             "password": "your_access_password"
         }
 
     If you want to use YAML format, create a config.yml with content:
-        endpoint: https://your.portainer.server/api
+        api_url: https://your.portainer.server/api
         user: your_access_key
         password: your_access_password
 
     We accept environment variables as well:
-        PORTAINER_ENDPOINT=https://your.portainer.server/api
+        PORTAINER_API_URL=https://your.portainer.server/api
         PORTAINER_USER=your_access_key
         PORTAINER_PASSWORD=your_access_password
 `
@@ -52,13 +52,13 @@ Configuration:
 
 type Config struct {
 	Container string
-	Endpoint  string
+	ApiUrl    string
 	User      string
 	Password  string
 }
 
 type PortainerAPI struct {
-	Endpoint string
+	ApiUrl   string
 	User     string
 	Password string
 	Jwt      string
@@ -136,16 +136,16 @@ func (w *WebTerm) Run() {
 	}
 }
 
-func (r *PortainerAPI) formatHttpEndpoint() string {
-	if r.Endpoint[len(r.Endpoint)-1:len(r.Endpoint)] == "/" {
-		return r.Endpoint[0 : len(r.Endpoint)-1]
+func (r *PortainerAPI) formatHttpApiUrl() string {
+	if r.ApiUrl[len(r.ApiUrl)-1:len(r.ApiUrl)] == "/" {
+		return r.ApiUrl[0 : len(r.ApiUrl)-1]
 	} else {
-		return r.Endpoint
+		return r.ApiUrl
 	}
 }
 
-func (r *PortainerAPI) formatWsEndpoint() string {
-	return "ws" + strings.TrimPrefix(r.formatHttpEndpoint(), "http")
+func (r *PortainerAPI) formatWsApiUrl() string {
+	return "ws" + strings.TrimPrefix(r.formatHttpApiUrl(), "http")
 }
 
 func (r *PortainerAPI) makeObjReq(req *http.Request, useAuth bool) (map[string]interface{}, error) {
@@ -210,7 +210,7 @@ func (r *PortainerAPI) getJwt() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		req, _ := http.NewRequest("POST", r.formatHttpEndpoint()+"/auth", bytes.NewReader(body))
+		req, _ := http.NewRequest("POST", r.formatHttpApiUrl()+"/auth", bytes.NewReader(body))
 
 		resp, err := r.makeObjReq(req, false)
 		if err != nil {
@@ -224,7 +224,7 @@ func (r *PortainerAPI) getJwt() (string, error) {
 }
 
 func (r *PortainerAPI) getContainerId(name string) string {
-	req, _ := http.NewRequest("GET", r.formatHttpEndpoint()+"/endpoints/1/docker/containers/json", nil)
+	req, _ := http.NewRequest("GET", r.formatHttpApiUrl()+"/endpoints/1/docker/containers/json", nil)
 	resp, err := r.makeArrReq(req, true)
 	if err != nil {
 		fmt.Println("Failed to communicate with Portainer API: " + err.Error())
@@ -270,7 +270,7 @@ func (r *PortainerAPI) getExecEndpointId(containerId string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req, _ := http.NewRequest("POST", r.formatHttpEndpoint()+"/endpoints/1/docker/containers/"+containerId+"/exec", bytes.NewReader(body))
+	req, _ := http.NewRequest("POST", r.formatHttpApiUrl()+"/endpoints/1/docker/containers/"+containerId+"/exec", bytes.NewReader(body))
 	resp, err := r.makeObjReq(req, true)
 
 	if err != nil {
@@ -298,13 +298,13 @@ func (r *PortainerAPI) getWsUrl(containerId string) string {
 	//resp, err := r.makeObjReq(req, true)
 	jwt, _ := r.getJwt()
 
-	return r.formatWsEndpoint() + "/websocket/exec?token=" + jwt + "&endpointId=1&id=" + endpointId
+	return r.formatWsApiUrl() + "/websocket/exec?token=" + jwt + "&endpointId=1&id=" + endpointId
 }
 
 func (r *PortainerAPI) getWSConn(wsUrl string) *websocket.Conn {
-	endpoint := r.formatHttpEndpoint()
+	apiUrl := r.formatHttpApiUrl()
 	header := http.Header{}
-	header.Add("Origin", endpoint)
+	header.Add("Origin", apiUrl)
 	conn, _, err := websocket.DefaultDialer.Dial(wsUrl, header)
 	if err != nil {
 		fmt.Println("We couldn't connect to this container: ", err.Error())
@@ -328,7 +328,7 @@ func ReadConfig() *Config {
 	app.Version(VERSION)
 	app.HelpFlag.Short('h')
 
-	viper.SetDefault("endpoint", "")
+	viper.SetDefault("api_url", "")
 	viper.SetDefault("user", "")
 	viper.SetDefault("password", "")
 
@@ -341,7 +341,7 @@ func ReadConfig() *Config {
 	viper.SetEnvPrefix("portainer")
 	viper.AutomaticEnv()
 
-	var endpoint = app.Flag("endpoint", "Portainer server endpoint, https://your.portainer.server/api .").Default(viper.GetString("endpoint")).String()
+	var api_url = app.Flag("api_url", "Portainer server API URL, https://your.portainer.server/api .").Default(viper.GetString("api_url")).String()
 	var user = app.Flag("user", "Portainer API user/accesskey.").Default(viper.GetString("user")).String()
 	var password = app.Flag("password", "Portainer API password/secret.").Default(viper.GetString("password")).String()
 	// TODO: Implement fuzzy match
@@ -349,14 +349,14 @@ func ReadConfig() *Config {
 
 	app.Parse(os.Args[1:])
 
-	if *endpoint == "" || *user == "" || *password == "" || *container == "" {
+	if *api_url == "" || *user == "" || *password == "" || *container == "" {
 		app.Usage(os.Args[1:])
 		os.Exit(1)
 	}
 
 	return &Config{
 		Container: *container,
-		Endpoint:  *endpoint,
+		ApiUrl:    *api_url,
 		User:      *user,
 		Password:  *password,
 	}
@@ -366,7 +366,7 @@ func ReadConfig() *Config {
 func main() {
 	config := ReadConfig()
 	portainer := PortainerAPI{
-		Endpoint: config.Endpoint,
+		ApiUrl:   config.ApiUrl,
 		User:     config.User,
 		Password: config.Password,
 	}
