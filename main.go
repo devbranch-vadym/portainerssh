@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -53,12 +54,14 @@ Configuration:
 type Config struct {
 	Container string
 	ApiUrl    string
+	Endpoint  int
 	User      string
 	Password  string
 }
 
 type PortainerAPI struct {
 	ApiUrl   string
+	Endpoint int
 	User     string
 	Password string
 	Jwt      string
@@ -224,7 +227,7 @@ func (r *PortainerAPI) getJwt() (string, error) {
 }
 
 func (r *PortainerAPI) getContainerId(name string) string {
-	req, _ := http.NewRequest("GET", r.formatHttpApiUrl()+"/endpoints/1/docker/containers/json", nil)
+	req, _ := http.NewRequest("GET", r.formatHttpApiUrl()+"/endpoints/"+strconv.Itoa(r.Endpoint)+"/docker/containers/json", nil)
 	resp, err := r.makeArrReq(req, true)
 	if err != nil {
 		fmt.Println("Failed to communicate with Portainer API: " + err.Error())
@@ -270,7 +273,7 @@ func (r *PortainerAPI) getExecEndpointId(containerId string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req, _ := http.NewRequest("POST", r.formatHttpApiUrl()+"/endpoints/1/docker/containers/"+containerId+"/exec", bytes.NewReader(body))
+	req, _ := http.NewRequest("POST", r.formatHttpApiUrl()+"/endpoints/"+strconv.Itoa(r.Endpoint)+"/docker/containers/"+containerId+"/exec", bytes.NewReader(body))
 	resp, err := r.makeObjReq(req, true)
 
 	if err != nil {
@@ -329,6 +332,7 @@ func ReadConfig() *Config {
 	app.HelpFlag.Short('h')
 
 	viper.SetDefault("api_url", "")
+	viper.SetDefault("endpoint", "1")
 	viper.SetDefault("user", "")
 	viper.SetDefault("password", "")
 
@@ -342,6 +346,7 @@ func ReadConfig() *Config {
 	viper.AutomaticEnv()
 
 	var api_url = app.Flag("api_url", "Portainer server API URL, https://your.portainer.server/api .").Default(viper.GetString("api_url")).String()
+	var endpoint = app.Flag("endpoint", "Portainer endpoint ID. Default is 1.").Default(viper.GetString("endpoint")).Int()
 	var user = app.Flag("user", "Portainer API user/accesskey.").Default(viper.GetString("user")).String()
 	var password = app.Flag("password", "Portainer API password/secret.").Default(viper.GetString("password")).String()
 	// TODO: Implement fuzzy match
@@ -349,7 +354,7 @@ func ReadConfig() *Config {
 
 	app.Parse(os.Args[1:])
 
-	if *api_url == "" || *user == "" || *password == "" || *container == "" {
+	if *api_url == "" || *endpoint == 0 || *user == "" || *password == "" || *container == "" {
 		app.Usage(os.Args[1:])
 		os.Exit(1)
 	}
@@ -357,6 +362,7 @@ func ReadConfig() *Config {
 	return &Config{
 		Container: *container,
 		ApiUrl:    *api_url,
+		Endpoint:  *endpoint,
 		User:      *user,
 		Password:  *password,
 	}
@@ -367,6 +373,7 @@ func main() {
 	config := ReadConfig()
 	portainer := PortainerAPI{
 		ApiUrl:   config.ApiUrl,
+		Endpoint: config.Endpoint,
 		User:     config.User,
 		Password: config.Password,
 	}
