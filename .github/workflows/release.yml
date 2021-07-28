@@ -1,5 +1,5 @@
 # workflow name
-name: release
+name: Go Build
 
 # on events
 on:

@@ -1,5 +1,7 @@
+name: Go vet
+
 on: [pull_request]
-name: Run Go vet
+
 jobs:
   run-go-vet:
     runs-on: ubuntu-latest
