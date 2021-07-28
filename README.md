@@ -74,11 +74,13 @@ Flags
 =====
 
 ```
-  -h, --help         Show context-sensitive help (also try --help-long and --help-man).
-      --version      Show application version.
-      --api_url=""   Portainer server API URL, https://your.portainer.server/api .
-      --user=""      Portainer API user/accesskey.
-      --password=""  Portainer API password/secret.
+  -h, --help            Show context-sensitive help (also try --help-long and --help-man).
+      --version         Show application version.
+      --api_url=""      Portainer server API URL, https://your.portainer.server/api .
+      --endpoint=1      Portainer endpoint ID. Default is 1.
+      --user=""         Portainer API user/accesskey.
+      --password=""     Portainer API password/secret.
+  -c, --command="bash"  Command to execute inside container
 ```
 
 **Args**
