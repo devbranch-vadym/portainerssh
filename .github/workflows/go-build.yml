@@ -58,14 +58,21 @@ jobs:
           cp portainerssh README.md LICENSE dist/
         shell: bash
 
-      # step 5: create release archive
+      # step 6: store the build version
+      - name: Store build version
+        if: ${{ github.event_name == 'release' && github.event.action == 'created' }}
+        run: |
+          echo "BUILD_VERSION=`cat version.txt`" >> $GITHUB_ENV
+
+      # step 7: create release archive
       - name: Create release archive
+        if: ${{ github.event_name == 'release' && github.event.action == 'created' }}
         uses: ihiroky/archive-action@v1
         with:
           root_dir: dist
-          file_path: portainerssh-${{ matrix.go-os }}-${{ matrix-go-arch }}.tar.gz
+          file_path: portainerssh-${{ matrix.go-os }}-${{ matrix-go-arch }}-${{ env.BUILD_VERSION }}.tar.gz
 
-      # step 6: upload build-artifacts
+      # step 8: upload build-artifacts
       - name: Upload build-artifacts
         if: ${{ github.event_name == 'release' && github.event.action == 'created' }}
         uses: skx/github-action-publish-binaries@master
