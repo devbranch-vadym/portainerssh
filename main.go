@@ -324,7 +324,7 @@ func (r *PortainerAPI) getWSConn(wsUrl string) *websocket.Conn {
 
 func (r *PortainerAPI) GetContainerConn(name string, command string) *websocket.Conn {
 	fmt.Println("Searching for container " + name)
-	containerId := r.getContainerId(name)
+	containerId := r.getContainerIds(name)
 	fmt.Println("Getting access token")
 	wsurl := r.getWsUrl(containerId, command)
 	fmt.Println("Connecting to a shell ...")
