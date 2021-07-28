@@ -3,6 +3,7 @@ name: release
 
 # on events
 on:
+  pull_request:
   release:
     types:
       - created
@@ -29,6 +30,7 @@ jobs:
 
       # step 3: upload build-artifacts
       - name: Upload build-artifacts
+        if: ${{ github.event_name == 'release' && github.event.action == 'created' }}
         uses: skx/github-action-publish-binaries@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
