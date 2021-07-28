@@ -94,7 +94,7 @@ func (w *WebTerm) wsWrite() {
 
 func (w *WebTerm) wsRead() {
 	var err error
-	var raw []byte
+				var raw []byte
 	for {
 		_, raw, err = w.SocketConn.ReadMessage()
 		if err != nil {
