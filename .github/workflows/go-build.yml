@@ -12,7 +12,7 @@ on:
 
 # jobs
 jobs:
-  vet-and-build:
+  cross-platform-build:
     strategy:
       matrix:
         include:
