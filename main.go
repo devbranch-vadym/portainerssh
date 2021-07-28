@@ -57,6 +57,8 @@ type Config struct {
 	Endpoint  int
 	User      string
 	Password  string
+	// TODO: change Command type to []string, just like Docker does
+	Command string
 }
 
 type PortainerAPI struct {
@@ -260,12 +262,12 @@ func (r *PortainerAPI) getContainerId(name string) string {
 	return ctn["Id"].(string)
 }
 
-func (r *PortainerAPI) getExecEndpointId(containerId string) (string, error) {
+func (r *PortainerAPI) getExecEndpointId(containerId string, command string) (string, error) {
 	jsonBodyData := map[string]interface{}{
 		"AttachStdin":  true,
 		"AttachStdout": true,
 		"AttachStderr": true,
-		"Cmd":          []string{"bash"},
+		"Cmd":          []string{command},
 		"Tty":          true,
 		"id":           containerId,
 	}
@@ -283,8 +285,8 @@ func (r *PortainerAPI) getExecEndpointId(containerId string) (string, error) {
 	return resp["Id"].(string), nil
 }
 
-func (r *PortainerAPI) getWsUrl(containerId string) string {
-	endpointId, err := r.getExecEndpointId(containerId)
+func (r *PortainerAPI) getWsUrl(containerId string, command string) string {
+	endpointId, err := r.getExecEndpointId(containerId, command)
 	if err != nil {
 		fmt.Println("Failed to run exec on container: ", err.Error())
 		os.Exit(1)
@@ -316,11 +318,11 @@ func (r *PortainerAPI) getWSConn(wsUrl string) *websocket.Conn {
 	return conn
 }
 
-func (r *PortainerAPI) GetContainerConn(name string) *websocket.Conn {
+func (r *PortainerAPI) GetContainerConn(name string, command string) *websocket.Conn {
 	fmt.Println("Searching for container " + name)
 	containerId := r.getContainerId(name)
 	fmt.Println("Getting access token")
-	wsurl := r.getWsUrl(containerId)
+	wsurl := r.getWsUrl(containerId, command)
 	fmt.Println("Connecting to a shell ...")
 	return r.getWSConn(wsurl)
 }
@@ -335,6 +337,7 @@ func ReadConfig() *Config {
 	viper.SetDefault("endpoint", "1")
 	viper.SetDefault("user", "")
 	viper.SetDefault("password", "")
+	viper.SetDefault("command", "bash")
 
 	viper.SetConfigName("config")              // name of config file (without extension)
 	viper.AddConfigPath(".")                   // call multiple times to add many search paths
@@ -349,6 +352,7 @@ func ReadConfig() *Config {
 	var endpoint = app.Flag("endpoint", "Portainer endpoint ID. Default is 1.").Default(viper.GetString("endpoint")).Int()
 	var user = app.Flag("user", "Portainer API user/accesskey.").Default(viper.GetString("user")).String()
 	var password = app.Flag("password", "Portainer API password/secret.").Default(viper.GetString("password")).String()
+	var command = app.Flag("command", "Command to execute inside container.").Default(viper.GetString("command")).Short('c').String()
 	// TODO: Implement fuzzy match
 	var container = app.Arg("container", "Container name, fuzzy match").Required().String()
 
@@ -365,6 +369,7 @@ func ReadConfig() *Config {
 		Endpoint:  *endpoint,
 		User:      *user,
 		Password:  *password,
+		Command:   *command,
 	}
 
 }
@@ -377,7 +382,7 @@ func main() {
 		User:     config.User,
 		Password: config.Password,
 	}
-	conn := portainer.GetContainerConn(config.Container)
+	conn := portainer.GetContainerConn(config.Container, config.Command)
 
 	wt := WebTerm{
 		SocketConn: conn,
