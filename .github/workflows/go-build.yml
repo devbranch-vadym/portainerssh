@@ -46,19 +46,19 @@ jobs:
           GOARCH: ${{ matrix.go-arch }}
         run: go vet .
 
-      # step 4: run Go build
+      # step 4: create dist
+      - name: Prepare files to archive
+        run: |
+          mkdir -p dist
+          cp README.md LICENSE dist/
+        shell: bash
+
+      # step 5: run Go build
       - name: Run Go build
         env:
           GOOS: ${{ matrix.go-os }}
           GOARCH: ${{ matrix.go-arch }}
-        run: go build
-
-      # step 5: create dist
-      - name: Prepare files to archive
-        run: |
-          mkdir -p dist
-          cp portainerssh README.md LICENSE dist/
-        shell: bash
+        run: go build -v -o dist/
 
       # step 6: store the build version
       - name: Store build version
