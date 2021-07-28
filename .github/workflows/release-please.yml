@@ -9,5 +9,6 @@ jobs:
     steps:
       - uses: GoogleCloudPlatform/release-please-action@v2
         with:
+          # The usual GITHUB_TOKEN doesn't work since PRs created using it doesn't trigger GitHub actions builds.
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           release-type: simple
