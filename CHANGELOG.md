@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.0.2](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.0.1...v1.0.2) (2021-07-29)
+
+
+### Bug Fixes
+
+* **ci:** fix release builds path ([9a4d99b](https://www.github.com/devbranch-vadym/portainerssh/commit/9a4d99bbc88b59d1b732448d3fd98865ffb045ab))
+
 ### [1.0.1](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.0.0...v1.0.1) (2021-07-28)
 
 
