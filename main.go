@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	tsize "github.com/kopoli/go-terminal-size"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -77,6 +78,11 @@ type WebTerm struct {
 	SocketConn *websocket.Conn
 	ttyState   *terminal.State
 	errChn     chan error
+}
+
+type TerminalDimensions struct {
+	Width  int
+	Height int
 }
 
 func (w *WebTerm) wsWrite() {
@@ -296,18 +302,34 @@ func (r *PortainerAPI) getWsUrl(containerId string, command string) string {
 		os.Exit(1)
 	}
 
-	// TODO: Implement terminal resize request as well as resizing in runtime.
-	//cols, rows, _ := terminal.GetSize(int(os.Stdin.Fd()))
-	//req, _ := http.NewRequest("POST", containerId+"?action=execute",
-	//	strings.NewReader(fmt.Sprintf(
-	//		`{"attachStdin":true, "attachStdout":true,`+
-	//			`"command":["/bin/sh", "-c", "TERM=xterm-256color; export TERM; `+
-	//			`stty cols %d rows %d; `+
-	//			`[ -x /bin/bash ] && ([ -x /usr/bin/script ] && /usr/bin/script -q -c \"/bin/bash\" /dev/null || exec /bin/bash) || exec /bin/sh"], "tty":true}`, cols, rows)))
-	//resp, err := r.makeObjReq(req, true)
+	// TODO: Connect to a tsize channel.
+	s, err := tsize.GetSize()
+	if (err != nil) {
+		fmt.Println("GetSize failed: ", err.Error())
+	} else {
+		// TODO: That's not really a correct approach; Portainer is expecting resize request _after_ WS connection
+		//  is established.
+		go r.resizeTerminal(endpointId, TerminalDimensions{Height: s.Height, Width: s.Width})
+	}
+
 	jwt, _ := r.getJwt()
 
 	return r.formatWsApiUrl() + "/websocket/exec?token=" + jwt + "&endpointId=1&id=" + endpointId
+}
+
+func (r *PortainerAPI) resizeTerminal(execEndpointId string, dimensions TerminalDimensions) (map[string]interface{}, error) {
+	jsonBodyData := map[string]interface{}{
+		"Height": dimensions.Height,
+		"Width":  dimensions.Width,
+		"id":     execEndpointId,
+	}
+	body, err := json.Marshal(jsonBodyData)
+	if err != nil {
+		return nil, err
+	}
+	req, _ := http.NewRequest("POST", r.formatHttpApiUrl()+"/endpoints/"+strconv.Itoa(r.Endpoint)+"/docker/exec/"+execEndpointId+"/resize?h="+strconv.Itoa(dimensions.Height)+"&w="+strconv.Itoa(dimensions.Width), bytes.NewReader(body))
+
+	return r.makeObjReq(req, true)
 }
 
 func (r *PortainerAPI) getWSConn(wsUrl string) *websocket.Conn {
