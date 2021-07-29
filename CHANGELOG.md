@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.0.2...v1.1.0) (2021-07-29)
+
+
+### Features
+
+* implement matching container names with wildcards ([c759db0](https://www.github.com/devbranch-vadym/portainerssh/commit/c759db0ec3e70d98d18389ca4e381c1b6e85162f))
+* initial support for terminal resizing ([e236a35](https://www.github.com/devbranch-vadym/portainerssh/commit/e236a35c623fb7d036ad8e60e26adbeb13f6e9d1))
+
 ### [1.0.2](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.0.1...v1.0.2) (2021-07-29)
 
 
