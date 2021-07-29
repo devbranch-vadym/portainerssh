@@ -27,18 +27,6 @@ Installation
 
 Sorry, not there yet.
 
-Usage
-=====
-
-`portainerssh [<flags>] <container>`
-
-Example
-=======
-
-```
-portainerssh my-container-name
-```
-
 Configuration
 =============
 
@@ -69,6 +57,23 @@ PORTAINER_API_URL=https://your.portainer.server/api
 PORTAINER_USER=your_access_key
 PORTAINER_PASSWORD=your_access_password
 ```
+Usage
+=====
+
+`portainerssh [<flags>] <container>`
+
+`?` in container name matches any single character. "%" matches zero or more characters.
+
+Examples
+=======
+
+```
+portainerssh my-container-name
+portainerssh my-container-%
+portainerssh %-container-%
+portainerssh my-container-????
+portainerssh -c /bin/sh my-container-name
+```
 
 Flags
 =====
@@ -80,12 +85,14 @@ Flags
       --endpoint=1      Portainer endpoint ID. Default is 1.
       --user=""         Portainer API user/accesskey.
       --password=""     Portainer API password/secret.
-  -c, --command="bash"  Command to execute inside container
+  -c, --command="bash"  Command to execute inside container.
 ```
 
 **Args**
 
-`<container>  Container name, fuzzy match`
+```
+<container>  Container name, wildcards allowed
+```
 
 Limitations
 =====
