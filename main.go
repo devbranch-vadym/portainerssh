@@ -16,6 +16,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/gorilla/websocket"
+	"github.com/minio/pkg/wildcard"
 	"github.com/spf13/viper"
 
 	_ "embed"
@@ -26,13 +27,16 @@ var VERSION string
 
 const (
 	AUTHOR = "Vadym Abramchuk <vadym+portainerssh@dev-branch.com>"
-	// TODO: Implement fuzzy match and update description.
-	USAGE = `
-Example:
-    portainerssh my-server-1
-    portainerssh "my-server*"  (equals to) portainerssh my-server%
-    portainerssh %proxy%
-    portainerssh "projectA-app-*" (equals to) portainerssh projectA-app-%
+	USAGE  = `
+Connect to container by it's name:
+	portainerssh my-server-1
+Substitute single character:	
+	portainerssh "my-server-?"
+Connect any container matching pattern:
+    portainerssh "%server%"
+
+Wildcards matching:
+   "?" matches any single character. "%" matches zero or more characters.
 
 Configuration:
     We read configuration from config.json or config.yml in ./, /etc/portainerssh/ and ~/.portainerssh/ folders.
@@ -248,7 +252,10 @@ func (r *PortainerAPI) getContainerId(name string) string {
 
 	var data []map[string]interface{}
 	for _, row := range resp {
-		if strings.Contains(row["Names"].([]interface{})[0].(string), name) {
+		if wildcard.Match(
+			strings.Replace(name, "%", "*", -1),
+			strings.TrimLeft(row["Names"].([]interface{})[0].(string), "/"),
+		) {
 			data = append(data, row)
 		}
 	}
@@ -304,7 +311,7 @@ func (r *PortainerAPI) getWsUrl(containerId string, command string) string {
 
 	// TODO: Connect to a tsize channel.
 	s, err := tsize.GetSize()
-	if (err != nil) {
+	if err != nil {
 		fmt.Println("GetSize failed: ", err.Error())
 	} else {
 		// TODO: That's not really a correct approach; Portainer is expecting resize request _after_ WS connection
@@ -379,8 +386,7 @@ func ReadConfig() *Config {
 	var user = app.Flag("user", "Portainer API user/accesskey.").Default(viper.GetString("user")).String()
 	var password = app.Flag("password", "Portainer API password/secret.").Default(viper.GetString("password")).String()
 	var command = app.Flag("command", "Command to execute inside container.").Default(viper.GetString("command")).Short('c').String()
-	// TODO: Implement fuzzy match
-	var container = app.Arg("container", "Container name, fuzzy match").Required().String()
+	var container = app.Arg("container", "Container name, wildcards allowed").Required().String()
 
 	app.Parse(os.Args[1:])
 
