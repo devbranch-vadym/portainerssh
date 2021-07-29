@@ -1,5 +1,4 @@
-Portainer SSH
-===========
+# Portainer SSH
 
 Native shell client for Portainer containers, provided a powerful native terminal to manage your Docker containers.
 
@@ -10,27 +9,27 @@ Native shell client for Portainer containers, provided a powerful native termina
 * It's smart. `portainerssh` uses fuzzy container name matching. Forget the container name? it doesn't matter, use "*"
   or "%" instead
 
-Is it really an SSH client?
-============
+# Is it really an SSH client?
 No. It's called so for historical purposes. It _acts_ like SSH in terms of providing you shell access to your
 containers. Also SSH is what people are likely googling for.
 
 
-Installation
-============
+# Installation
 
-**Via Golang**
+## Via Golang
 
-`# go get github.com/devbranch-vadym/portainerssh`
+```bash
+go get github.com/devbranch-vadym/portainerssh
+````
 
-**Binary builds**
+## Binary builds
 
-Sorry, not there yet.
+Binary builds may be found at [releases](https://github.com/devbranch-vadym/portainerssh/releases)
+page. We currently provide `amd64` and `arm64` builds for GNU/Linux and Mac and `amd64` for Windows.
 
-Configuration
-=============
+# Configuration
 
-The configuration could be read from `config.json` or `config.yml` in `./`, `/etc/portainerssh/` or `~/.portainerssh/` folders.
+The configuration could be provided by either `config.json` or `config.yml` in `./`, `/etc/portainerssh/` or `~/.portainerssh/` folders.
 
 If you want to use JSON format, create a `config.json` in the folders with content:
 
@@ -48,6 +47,7 @@ If you want to use YAML format, create a `config.yml` with content:
 api_url: https://your.portainer.server/api
 user: your_access_key
 password: your_access_password
+endpoint: 10 # Optional Portainer endpoint ID, defaults to 1.
 ```
 
 We accept environment variables as well:
@@ -57,15 +57,16 @@ PORTAINER_API_URL=https://your.portainer.server/api
 PORTAINER_USER=your_access_key
 PORTAINER_PASSWORD=your_access_password
 ```
-Usage
-=====
 
-`portainerssh [<flags>] <container>`
+# Usage
+
+```bash
+portainerssh [<flags>] <container>
+````
 
 `?` in container name matches any single character. "%" matches zero or more characters.
 
-Examples
-=======
+## Examples
 
 ```
 portainerssh my-container-name
@@ -75,8 +76,7 @@ portainerssh my-container-????
 portainerssh -c /bin/sh my-container-name
 ```
 
-Flags
-=====
+## Flags
 
 ```
   -h, --help            Show context-sensitive help (also try --help-long and --help-man).
@@ -88,17 +88,15 @@ Flags
   -c, --command="bash"  Command to execute inside container.
 ```
 
-**Args**
+## Arguments
 
 ```
 <container>  Container name, wildcards allowed
 ```
 
-Limitations
-=====
-Currently only first Docker instance is supported.
+## Limitations
+Currently, only Docker endpoints are supported.
 
-History
-=====
+# History
 `portainerssh` is based on wonderful `rancherssh` utility by Fang Li. In fact, `portainerssh` is a fork and partial
 rewrite of `rancherssh`, just for Portainer.
