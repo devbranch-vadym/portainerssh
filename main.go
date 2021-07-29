@@ -66,8 +66,6 @@ type Config struct {
 	Endpoint  int
 	User      string
 	Password  string
-	// TODO: change Command type to []string, just like Docker does
-	Command string
 }
 
 type PortainerAPI struct {
@@ -76,6 +74,13 @@ type PortainerAPI struct {
 	User     string
 	Password string
 	Jwt      string
+}
+
+type ContainerExecParams struct {
+	ContainerName string
+	// TODO: change Command type to []string, just like Docker does
+	Command string
+	User    string
 }
 
 type WebTerm struct {
@@ -242,7 +247,7 @@ func (r *PortainerAPI) getJwt() (string, error) {
 	return r.Jwt, nil
 }
 
-func (r *PortainerAPI) getContainerId(name string) string {
+func (r *PortainerAPI) getContainerId(params *ContainerExecParams) string {
 	req, _ := http.NewRequest("GET", r.formatHttpApiUrl()+"/endpoints/"+strconv.Itoa(r.Endpoint)+"/docker/containers/json", nil)
 	resp, err := r.makeArrReq(req, true)
 	if err != nil {
@@ -253,7 +258,7 @@ func (r *PortainerAPI) getContainerId(name string) string {
 	var data []map[string]interface{}
 	for _, row := range resp {
 		if wildcard.Match(
-			strings.Replace(name, "%", "*", -1),
+			strings.Replace(params.ContainerName, "%", "*", -1),
 			strings.TrimLeft(row["Names"].([]interface{})[0].(string), "/"),
 		) {
 			data = append(data, row)
@@ -262,7 +267,7 @@ func (r *PortainerAPI) getContainerId(name string) string {
 
 	var choice = 1
 	if len(data) == 0 {
-		fmt.Println("Container " + name + " not existed in system, not running, or you don't have access permissions.")
+		fmt.Println("Container " + params.ContainerName + " not existed in system, not running, or you don't have access permissions.")
 		os.Exit(1)
 	}
 	if len(data) > 1 {
@@ -279,14 +284,17 @@ func (r *PortainerAPI) getContainerId(name string) string {
 	return ctn["Id"].(string)
 }
 
-func (r *PortainerAPI) getExecEndpointId(containerId string, command string) (string, error) {
+func (r *PortainerAPI) getExecEndpointId(containerId string, params *ContainerExecParams) (string, error) {
 	jsonBodyData := map[string]interface{}{
 		"AttachStdin":  true,
 		"AttachStdout": true,
 		"AttachStderr": true,
-		"Cmd":          []string{command},
+		"Cmd":          []string{params.Command},
 		"Tty":          true,
 		"id":           containerId,
+	}
+	if params.User != "" {
+		jsonBodyData["User"] = params.User
 	}
 	body, err := json.Marshal(jsonBodyData)
 	if err != nil {
@@ -302,8 +310,8 @@ func (r *PortainerAPI) getExecEndpointId(containerId string, command string) (st
 	return resp["Id"].(string), nil
 }
 
-func (r *PortainerAPI) getWsUrl(containerId string, command string) string {
-	endpointId, err := r.getExecEndpointId(containerId, command)
+func (r *PortainerAPI) getWsUrl(containerId string, params *ContainerExecParams) string {
+	endpointId, err := r.getExecEndpointId(containerId, params)
 	if err != nil {
 		fmt.Println("Failed to run exec on container: ", err.Error())
 		os.Exit(1)
@@ -351,16 +359,16 @@ func (r *PortainerAPI) getWSConn(wsUrl string) *websocket.Conn {
 	return conn
 }
 
-func (r *PortainerAPI) GetContainerConn(name string, command string) *websocket.Conn {
-	fmt.Println("Searching for container " + name)
-	containerId := r.getContainerId(name)
+func (r *PortainerAPI) GetContainerConn(params *ContainerExecParams) *websocket.Conn {
+	fmt.Println("Searching for container " + params.ContainerName)
+	containerId := r.getContainerId(params)
 	fmt.Println("Getting access token")
-	wsurl := r.getWsUrl(containerId, command)
+	wsurl := r.getWsUrl(containerId, params)
 	fmt.Println("Connecting to a shell ...")
 	return r.getWSConn(wsurl)
 }
 
-func ReadConfig() *Config {
+func ReadConfig() (*Config, *ContainerExecParams) {
 	app := kingpin.New("portainerssh", USAGE)
 	app.Author(AUTHOR)
 	app.Version(strings.TrimSpace(VERSION))
@@ -370,7 +378,6 @@ func ReadConfig() *Config {
 	viper.SetDefault("endpoint", "1")
 	viper.SetDefault("user", "")
 	viper.SetDefault("password", "")
-	viper.SetDefault("command", "bash")
 
 	viper.SetConfigName("config")              // name of config file (without extension)
 	viper.AddConfigPath(".")                   // call multiple times to add many search paths
@@ -385,8 +392,10 @@ func ReadConfig() *Config {
 	var endpoint = app.Flag("endpoint", "Portainer endpoint ID. Default is 1.").Default(viper.GetString("endpoint")).Int()
 	var user = app.Flag("user", "Portainer API user/accesskey.").Default(viper.GetString("user")).String()
 	var password = app.Flag("password", "Portainer API password/secret.").Default(viper.GetString("password")).String()
-	var command = app.Flag("command", "Command to execute inside container.").Default(viper.GetString("command")).Short('c').String()
+
 	var container = app.Arg("container", "Container name, wildcards allowed").Required().String()
+	var command = app.Flag("command", "Command to execute inside container.").Default("bash").Short('c').String()
+	var runAs = app.Flag("run_as_user", "User to execute container command as.").Default("").Short('u').String()
 
 	app.Parse(os.Args[1:])
 
@@ -396,25 +405,28 @@ func ReadConfig() *Config {
 	}
 
 	return &Config{
-		Container: *container,
-		ApiUrl:    *api_url,
-		Endpoint:  *endpoint,
-		User:      *user,
-		Password:  *password,
-		Command:   *command,
-	}
+			Container: *container,
+			ApiUrl:    *api_url,
+			Endpoint:  *endpoint,
+			User:      *user,
+			Password:  *password,
+		}, &ContainerExecParams{
+			ContainerName: *container,
+			Command:       *command,
+			User:          *runAs,
+		}
 
 }
 
 func main() {
-	config := ReadConfig()
+	config, params := ReadConfig()
 	portainer := PortainerAPI{
 		ApiUrl:   config.ApiUrl,
 		Endpoint: config.Endpoint,
 		User:     config.User,
 		Password: config.Password,
 	}
-	conn := portainer.GetContainerConn(config.Container, config.Command)
+	conn := portainer.GetContainerConn(params)
 
 	wt := WebTerm{
 		SocketConn: conn,
