@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.1.0...v1.2.0) (2021-07-29)
+
+
+### Features
+
+* implement running commands as a different user ([cb271eb](https://www.github.com/devbranch-vadym/portainerssh/commit/cb271ebd85f6a017f7f4cf033e753a033c7ff204))
+
 ## [1.1.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.0.2...v1.1.0) (2021-07-29)
 
 
