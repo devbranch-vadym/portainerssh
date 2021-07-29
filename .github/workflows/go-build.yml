@@ -50,6 +50,7 @@ jobs:
       - name: Prepare files to archive
         run: |
           mkdir -p dist
+          mkdir -p out
           cp README.md LICENSE dist/
         shell: bash
 
@@ -72,7 +73,7 @@ jobs:
         uses: ihiroky/archive-action@v1
         with:
           root_dir: dist
-          file_path: portainerssh-${{ matrix.go-os }}-${{ matrix.go-arch }}-${{ env.BUILD_VERSION }}.tar.gz
+          file_path: out/portainerssh-${{ matrix.go-os }}-${{ matrix.go-arch }}-${{ env.BUILD_VERSION }}.tar.gz
 
       # step 8: upload build-artifacts
       - name: Upload build-artifacts
@@ -81,4 +82,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: "./dist/*.tar.gz"
+          args: "./out/*.tar.gz"
