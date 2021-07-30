@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,9 +17,7 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/devbranch-vadym/portainerssh/wsterm"
-
-	_ "embed"
+	"github.com/devbranch-vadym/portainerssh/pkg/wsterm"
 )
 
 //go:embed version.txt
