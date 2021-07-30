@@ -1,4 +1,4 @@
-module portainerssh
+module github.com/devbranch-vadym/portainerssh
 
 go 1.16
 
