@@ -6,10 +6,16 @@ import (
 	"os"
 )
 
+// WebTerm connects to remote shell via websocket protocol and connects it to local terminal.
 type WebTerm struct {
 	SocketConn *websocket.Conn
 	ttyState   *terminal.State
 	errChn     chan error
+}
+
+// NewWebTerm creates a new WebTerm object and connects it to a given websocket.
+func NewWebTerm(socketConn *websocket.Conn) *WebTerm {
+	return &WebTerm{SocketConn: socketConn}
 }
 
 func (w *WebTerm) wsWrite() {
@@ -51,7 +57,7 @@ func (w *WebTerm) wsRead() {
 	}
 }
 
-func (w *WebTerm) SetRawtty(isRaw bool) {
+func (w *WebTerm) setRawtty(isRaw bool) {
 	if isRaw {
 		state, err := terminal.MakeRaw(int(os.Stdin.Fd()))
 		if err != nil {
@@ -63,15 +69,16 @@ func (w *WebTerm) SetRawtty(isRaw bool) {
 	}
 }
 
+// Run starts transferring data between local terminal and remote shell connection.
 func (w *WebTerm) Run() {
 	w.errChn = make(chan error)
-	w.SetRawtty(true)
+	w.setRawtty(true)
 
 	go w.wsRead()
 	go w.wsWrite()
 
 	err := <-w.errChn
-	w.SetRawtty(false)
+	w.setRawtty(false)
 
 	if err != nil {
 		panic(err)
