@@ -7,12 +7,12 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/devbranch-vadym/portainerssh/pkg/portainer_api"
+	"github.com/devbranch-vadym/portainerssh/pkg/portainer"
 )
 
 const (
-	AUTHOR = "Vadym Abramchuk <vadym+portainerssh@dev-branch.com>"
-	USAGE  = `
+	author = "Vadym Abramchuk <vadym+portainerssh@dev-branch.com>"
+	usage  = `
 Connect to container by it's name:
 	portainerssh my-server-1
 Substitute single character:
@@ -45,17 +45,19 @@ Configuration:
 `
 )
 
+// Config is a runtime configuration.
 type Config struct {
-	Container string
-	ApiUrl    string
-	Endpoint  int
-	User      string
-	Password  string
+	ApiUrl   string
+	Endpoint int
+	User     string
+	Password string
 }
 
-func ReadConfig(version string) (*Config, *portainer_api.ContainerExecParams) {
-	app := kingpin.New("portainerssh", USAGE)
-	app.Author(AUTHOR)
+// ReadConfig gathers configuration values from all available sources and returns everything required to connect
+// to Portainer API and execute a command in container.
+func ReadConfig(version string) (*Config, *portainer.ContainerExecParams) {
+	app := kingpin.New("portainerssh", usage)
+	app.Author(author)
 	app.Version(strings.TrimSpace(version))
 	app.HelpFlag.Short('h')
 
@@ -73,7 +75,7 @@ func ReadConfig(version string) (*Config, *portainer_api.ContainerExecParams) {
 	viper.SetEnvPrefix("portainer")
 	viper.AutomaticEnv()
 
-	var api_url = app.Flag("api_url", "Portainer server API URL, https://your.portainer.server/api .").Default(viper.GetString("api_url")).String()
+	var apiUrl = app.Flag("api_url", "Portainer server API URL, https://your.portainer.server/api .").Default(viper.GetString("api_url")).String()
 	var endpoint = app.Flag("endpoint", "Portainer endpoint ID. Default is 1.").Default(viper.GetString("endpoint")).Int()
 	var user = app.Flag("user", "Portainer API user/accesskey.").Default(viper.GetString("user")).String()
 	var password = app.Flag("password", "Portainer API password/secret.").Default(viper.GetString("password")).String()
@@ -84,18 +86,17 @@ func ReadConfig(version string) (*Config, *portainer_api.ContainerExecParams) {
 
 	app.Parse(os.Args[1:])
 
-	if *api_url == "" || *endpoint == 0 || *user == "" || *password == "" || *container == "" {
+	if *apiUrl == "" || *endpoint == 0 || *user == "" || *password == "" || *container == "" {
 		app.Usage(os.Args[1:])
 		os.Exit(1)
 	}
 
 	return &Config{
-			Container: *container,
-			ApiUrl:    *api_url,
-			Endpoint:  *endpoint,
-			User:      *user,
-			Password:  *password,
-		}, &portainer_api.ContainerExecParams{
+			ApiUrl:   *apiUrl,
+			Endpoint: *endpoint,
+			User:     *user,
+			Password: *password,
+		}, &portainer.ContainerExecParams{
 			ContainerName: *container,
 			Command:       *command,
 			User:          *runAs,

@@ -1,4 +1,4 @@
-package portainer_api
+package portainer
 
 import (
 	"bytes"
@@ -7,12 +7,13 @@ import (
 	"strconv"
 )
 
+// TerminalDimensions is a simple struct containing current user's terminal width and height.
 type TerminalDimensions struct {
 	Width  int
 	Height int
 }
 
-func (r *PortainerAPI) resizeTerminal(execEndpointId string, dimensions TerminalDimensions) (map[string]interface{}, error) {
+func (r *API) resizeTerminal(execEndpointId string, dimensions TerminalDimensions) (map[string]interface{}, error) {
 	jsonBodyData := map[string]interface{}{
 		"Height": dimensions.Height,
 		"Width":  dimensions.Width,
