@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/devbranch-vadym/portainerssh/internal/config"
-	"github.com/devbranch-vadym/portainerssh/pkg/portainer_api"
+	"github.com/devbranch-vadym/portainerssh/pkg/portainer"
 	"github.com/devbranch-vadym/portainerssh/pkg/wsterm"
 )
 
@@ -14,7 +14,7 @@ var version string
 
 func main() {
 	config, params := config.ReadConfig(version)
-	portainer := portainer_api.PortainerAPI{
+	portainer := portainer.API{
 		ApiUrl:   config.ApiUrl,
 		Endpoint: config.Endpoint,
 		User:     config.User,

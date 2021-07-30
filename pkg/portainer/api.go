@@ -1,4 +1,4 @@
-package portainer_api
+package portainer
 
 import (
 	"bytes"
@@ -15,7 +15,8 @@ import (
 	"github.com/minio/pkg/wildcard"
 )
 
-type PortainerAPI struct {
+// API handles remote API calls to Portainer.
+type API struct {
 	ApiUrl   string
 	Endpoint int
 	User     string
@@ -23,6 +24,7 @@ type PortainerAPI struct {
 	Jwt      string
 }
 
+// ContainerExecParams contains details required for connecting to a specific container.
 type ContainerExecParams struct {
 	ContainerName string
 	// TODO: change Command type to []string, just like Docker does
@@ -30,19 +32,18 @@ type ContainerExecParams struct {
 	User    string
 }
 
-func (r *PortainerAPI) formatHttpApiUrl() string {
+func (r *API) formatHttpApiUrl() string {
 	if r.ApiUrl[len(r.ApiUrl)-1:len(r.ApiUrl)] == "/" {
 		return r.ApiUrl[0 : len(r.ApiUrl)-1]
-	} else {
-		return r.ApiUrl
 	}
+	return r.ApiUrl
 }
 
-func (r *PortainerAPI) formatWsApiUrl() string {
+func (r *API) formatWsApiUrl() string {
 	return "ws" + strings.TrimPrefix(r.formatHttpApiUrl(), "http")
 }
 
-func (r *PortainerAPI) makeObjReq(req *http.Request, useAuth bool) (map[string]interface{}, error) {
+func (r *API) makeObjReq(req *http.Request, useAuth bool) (map[string]interface{}, error) {
 	body, err := r.makeReq(req, useAuth)
 	if err != nil {
 		return nil, err
@@ -55,7 +56,7 @@ func (r *PortainerAPI) makeObjReq(req *http.Request, useAuth bool) (map[string]i
 	return apiResp, nil
 }
 
-func (r *PortainerAPI) makeArrReq(req *http.Request, useAuth bool) ([]map[string]interface{}, error) {
+func (r *API) makeArrReq(req *http.Request, useAuth bool) ([]map[string]interface{}, error) {
 	body, err := r.makeReq(req, useAuth)
 	if err != nil {
 		return nil, err
@@ -68,7 +69,7 @@ func (r *PortainerAPI) makeArrReq(req *http.Request, useAuth bool) ([]map[string
 	return apiResp, nil
 }
 
-func (r *PortainerAPI) makeReq(req *http.Request, useAuth bool) ([]byte, error) {
+func (r *API) makeReq(req *http.Request, useAuth bool) ([]byte, error) {
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
 	if useAuth {
@@ -94,7 +95,7 @@ func (r *PortainerAPI) makeReq(req *http.Request, useAuth bool) ([]byte, error) 
 	return body, nil
 }
 
-func (r *PortainerAPI) getJwt() (string, error) {
+func (r *API) getJwt() (string, error) {
 	if r.Jwt == "" {
 		jsonBodyData := map[string]interface{}{
 			"username": r.User,
@@ -117,7 +118,7 @@ func (r *PortainerAPI) getJwt() (string, error) {
 	return r.Jwt, nil
 }
 
-func (r *PortainerAPI) getContainerId(params *ContainerExecParams) string {
+func (r *API) getContainerId(params *ContainerExecParams) string {
 	req, _ := http.NewRequest("GET", r.formatHttpApiUrl()+"/endpoints/"+strconv.Itoa(r.Endpoint)+"/docker/containers/json", nil)
 	resp, err := r.makeArrReq(req, true)
 	if err != nil {
@@ -154,7 +155,7 @@ func (r *PortainerAPI) getContainerId(params *ContainerExecParams) string {
 	return ctn["Id"].(string)
 }
 
-func (r *PortainerAPI) getExecEndpointId(containerId string, params *ContainerExecParams) (string, error) {
+func (r *API) getExecEndpointId(containerId string, params *ContainerExecParams) (string, error) {
 	jsonBodyData := map[string]interface{}{
 		"AttachStdin":  true,
 		"AttachStdout": true,
@@ -180,7 +181,7 @@ func (r *PortainerAPI) getExecEndpointId(containerId string, params *ContainerEx
 	return resp["Id"].(string), nil
 }
 
-func (r *PortainerAPI) getWsUrl(containerId string, params *ContainerExecParams) string {
+func (r *API) getWsUrl(containerId string, params *ContainerExecParams) string {
 	endpointId, err := r.getExecEndpointId(containerId, params)
 	if err != nil {
 		fmt.Println("Failed to run exec on container: ", err.Error())
@@ -202,7 +203,7 @@ func (r *PortainerAPI) getWsUrl(containerId string, params *ContainerExecParams)
 	return r.formatWsApiUrl() + "/websocket/exec?token=" + jwt + "&endpointId=1&id=" + endpointId
 }
 
-func (r *PortainerAPI) getWSConn(wsUrl string) *websocket.Conn {
+func (r *API) getWSConn(wsUrl string) *websocket.Conn {
 	apiUrl := r.formatHttpApiUrl()
 	header := http.Header{}
 	header.Add("Origin", apiUrl)
@@ -214,7 +215,8 @@ func (r *PortainerAPI) getWSConn(wsUrl string) *websocket.Conn {
 	return conn
 }
 
-func (r *PortainerAPI) GetContainerConn(params *ContainerExecParams) *websocket.Conn {
+// GetContainerConn finds a container to connect, executes a command in it and returns spawned websocket connection.
+func (r *API) GetContainerConn(params *ContainerExecParams) *websocket.Conn {
 	fmt.Println("Searching for container " + params.ContainerName)
 	containerId := r.getContainerId(params)
 	fmt.Println("Getting access token")
