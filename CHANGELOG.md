@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.2.2](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.2.1...v1.2.2) (2021-07-30)
+
+
+### Bug Fixes
+
+* handle unexpected EOF error when websocket is being closed by Portainer ([bd3a20c](https://www.github.com/devbranch-vadym/portainerssh/commit/bd3a20ca7ef740cbd9b97f5aa7c691aadc0da450))
+
 ### [1.2.1](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.2.0...v1.2.1) (2021-07-30)
 
 
