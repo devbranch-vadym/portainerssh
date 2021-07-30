@@ -2,6 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/devbranch-vadym/portainerssh)](https://goreportcard.com/report/github.com/devbranch-vadym/portainerssh)
 [![Go Reference](https://pkg.go.dev/badge/github.com/devbranch-vadym/portainerssh.svg)](https://pkg.go.dev/github.com/devbranch-vadym/portainerssh)
+[![Release](https://img.shields.io/github/v/release/devbranch-vadym/portainerssh.svg?style=flat-square)](https://github.com/devbranch-vadym/portainerssh/releases/latest)
 
 Native shell client for Portainer containers, provided a powerful native terminal to manage your Docker containers.
 
