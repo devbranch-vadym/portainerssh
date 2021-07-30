@@ -22,9 +22,7 @@ func main() {
 	}
 	conn := portainer.GetContainerConn(params)
 
-	wt := wsterm.WebTerm{
-		SocketConn: conn,
-	}
+	wt := wsterm.NewWebTerm(conn)
 	wt.Run()
 
 	fmt.Println("Good bye.")
