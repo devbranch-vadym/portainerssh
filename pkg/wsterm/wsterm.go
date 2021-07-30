@@ -30,7 +30,7 @@ func (w *WebTerm) wsWrite() {
 
 		err = w.SocketConn.WriteMessage(websocket.BinaryMessage, keybuf[0:1])
 		if err != nil {
-			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseAbnormalClosure) {
 				w.errChn <- nil
 			} else {
 				w.errChn <- err
@@ -46,7 +46,7 @@ func (w *WebTerm) wsRead() {
 	for {
 		_, raw, err = w.SocketConn.ReadMessage()
 		if err != nil {
-			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseAbnormalClosure) {
 				w.errChn <- nil
 			} else {
 				w.errChn <- err
