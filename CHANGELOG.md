@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.2.2...v1.3.0) (2021-08-01)
+
+
+### Features
+
+* implement realtime terminal resize handling ([21bc1f3](https://www.github.com/devbranch-vadym/portainerssh/commit/21bc1f32f69f50ec04ba72fd07129742e42f1149))
+
 ### [1.2.2](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.2.1...v1.2.2) (2021-07-30)
 
 
