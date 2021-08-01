@@ -14,13 +14,13 @@ var version string
 
 func main() {
 	config, params := config.ReadConfig(version)
-	portainer := portainer.API{
+	api := portainer.API{
 		ApiUrl:   config.ApiUrl,
 		Endpoint: config.Endpoint,
 		User:     config.User,
 		Password: config.Password,
 	}
-	conn := portainer.GetContainerConn(params)
+	conn := api.GetContainerConn(params)
 
 	wt := wsterm.NewWebTerm(conn)
 	wt.Run()
