@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
-	"github.com/kopoli/go-terminal-size"
 	"github.com/minio/pkg/wildcard"
 )
 
@@ -181,26 +180,17 @@ func (r *API) getExecEndpointId(containerId string, params *ContainerExecParams)
 	return resp["Id"].(string), nil
 }
 
-func (r *API) getWsUrl(containerId string, params *ContainerExecParams) string {
+func (r *API) getWsUrl(containerId string, params *ContainerExecParams) (string, chan<- TriggerResize) {
 	endpointId, err := r.getExecEndpointId(containerId, params)
 	if err != nil {
 		fmt.Println("Failed to run exec on container: ", err.Error())
 		os.Exit(1)
 	}
 
-	// TODO: Connect to a tsize channel.
-	s, err := tsize.GetSize()
-	if err != nil {
-		fmt.Println("GetSize failed: ", err.Error())
-	} else {
-		// TODO: That's not really a correct approach; Portainer is expecting resize request _after_ WS connection
-		//  is established.
-		go r.resizeTerminal(endpointId, TerminalDimensions{Height: s.Height, Width: s.Width})
-	}
+	resize, _, _ := r.handleTerminalResize(endpointId)
 
 	jwt, _ := r.getJwt()
-
-	return r.formatWsApiUrl() + "/websocket/exec?token=" + jwt + "&endpointId=1&id=" + endpointId
+	return r.formatWsApiUrl() + "/websocket/exec?token=" + jwt + "&endpointId=1&id=" + endpointId, resize
 }
 
 func (r *API) getWSConn(wsUrl string) *websocket.Conn {
@@ -220,7 +210,12 @@ func (r *API) GetContainerConn(params *ContainerExecParams) *websocket.Conn {
 	fmt.Println("Searching for container " + params.ContainerName)
 	containerId := r.getContainerId(params)
 	fmt.Println("Getting access token")
-	wsurl := r.getWsUrl(containerId, params)
+	wsurl, resize := r.getWsUrl(containerId, params)
 	fmt.Println("Connecting to a shell ...")
-	return r.getWSConn(wsurl)
+	conn := r.getWSConn(wsurl)
+
+	// Trigger terminal resize after connection is established.
+	resize <- TriggerResize{}
+
+	return conn
 }
