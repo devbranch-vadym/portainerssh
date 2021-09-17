@@ -7,7 +7,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gorilla/websocket v1.4.2
 	github.com/kopoli/go-terminal-size v0.0.0-20170219200355-5c97524c8b54
-	github.com/minio/pkg v1.0.11
+	github.com/minio/pkg v1.1.3
 	github.com/spf13/viper v1.8.1
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
