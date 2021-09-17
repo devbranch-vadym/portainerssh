@@ -26,8 +26,7 @@ type API struct {
 // ContainerExecParams contains details required for connecting to a specific container.
 type ContainerExecParams struct {
 	ContainerName string
-	// TODO: change Command type to []string, just like Docker does
-	Command string
+	Command []string
 	User    string
 }
 
@@ -159,7 +158,7 @@ func (r *API) getExecEndpointId(containerId string, params *ContainerExecParams)
 		"AttachStdin":  true,
 		"AttachStdout": true,
 		"AttachStderr": true,
-		"Cmd":          []string{params.Command},
+		"Cmd":          params.Command,
 		"Tty":          true,
 		"id":           containerId,
 	}

@@ -8,6 +8,7 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/devbranch-vadym/portainerssh/pkg/portainer"
+	"github.com/google/shlex"
 )
 
 const (
@@ -90,6 +91,9 @@ func ReadConfig(version string) (*Config, *portainer.ContainerExecParams) {
 		app.Usage(os.Args[1:])
 		os.Exit(1)
 	}
+	
+	// TODO: Handle shlex.Split errors
+	commandParts, _ := shlex.Split(*command)
 
 	return &Config{
 			ApiUrl:   *apiUrl,
@@ -98,7 +102,7 @@ func ReadConfig(version string) (*Config, *portainer.ContainerExecParams) {
 			Password: *password,
 		}, &portainer.ContainerExecParams{
 			ContainerName: *container,
-			Command:       *command,
+			Command:       commandParts,
 			User:          *runAs,
 		}
 
