@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.3.0...v1.4.0) (2021-09-17)
+
+
+### Features
+
+* use shlex.Split to parse command as array ([f200878](https://www.github.com/devbranch-vadym/portainerssh/commit/f2008781e22e21bd1b399f0872f0960a85884f17))
+
 ## [1.3.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.2.2...v1.3.0) (2021-08-01)
 
 
