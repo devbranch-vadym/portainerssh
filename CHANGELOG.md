@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.4.0...v1.5.0) (2021-09-28)
+
+
+### Features
+
+* support running in non-interactive shells ([24c601c](https://www.github.com/devbranch-vadym/portainerssh/commit/24c601c67943e8fa45cbee4cefed5907a019d926))
+
 ## [1.4.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.3.0...v1.4.0) (2021-09-17)
 
 
