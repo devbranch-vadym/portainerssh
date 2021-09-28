@@ -3,6 +3,7 @@ package wsterm
 import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/ssh/terminal"
+	"io"
 	"os"
 )
 
@@ -24,7 +25,11 @@ func (w *WebTerm) wsWrite() {
 	for {
 		_, err = os.Stdin.Read(keybuf[0:1])
 		if err != nil {
-			w.errChn <- err
+			if err != io.EOF {
+				// EOF is not really an error so it shouldn't be sent to errors channel.
+				// On the other hand, receiving EOF should stop writing to websocket.
+				w.errChn <- err
+			}
 			return
 		}
 
@@ -58,14 +63,20 @@ func (w *WebTerm) wsRead() {
 }
 
 func (w *WebTerm) setRawtty(isRaw bool) {
+	stdInFd := int(os.Stdin.Fd())
+	if !terminal.IsTerminal(stdInFd) {
+		// Do not attempt to change the terminal mode if it's not a TTY.
+		return
+	}
+
 	if isRaw {
-		state, err := terminal.MakeRaw(int(os.Stdin.Fd()))
+		state, err := terminal.MakeRaw(stdInFd)
 		if err != nil {
 			panic(err)
 		}
 		w.ttyState = state
 	} else {
-		terminal.Restore(int(os.Stdin.Fd()), w.ttyState)
+		terminal.Restore(stdInFd, w.ttyState)
 	}
 }
 
