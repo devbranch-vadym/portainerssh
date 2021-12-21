@@ -33,7 +33,7 @@ func (r *API) resizeTerminal(execEndpointId string, size tsize.Size) error {
 
 type TriggerResize struct{}
 
-func (r *API) handleTerminalResize(execEndpointId string) (chan<- TriggerResize, <-chan error, error) {
+func (r *API) handleTerminalResize(execInstanceId string) (chan<- TriggerResize, <-chan error, error) {
 	sizeListener, err := tsize.NewSizeListener()
 	if err != nil {
 		// Error creating SizeListener
@@ -50,10 +50,10 @@ func (r *API) handleTerminalResize(execEndpointId string) (chan<- TriggerResize,
 				if err != nil {
 					errChan <- err
 				}
-				r.resizeTerminal(execEndpointId, size)
+				r.resizeTerminal(execInstanceId, size)
 
 			case newSize := <-sizeListener.Change:
-				 r.resizeTerminal(execEndpointId, newSize)
+				r.resizeTerminal(execInstanceId, newSize)
 			}
 		}
 	}()
