@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.5.0...v1.6.0) (2021-12-23)
+
+
+### Features
+
+* support returning container command exit code ([f981486](https://www.github.com/devbranch-vadym/portainerssh/commit/f981486a0763ee3fafae4785b748be50b3aed3f2))
+
 ## [1.5.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.4.0...v1.5.0) (2021-09-28)
 
 
