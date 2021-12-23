@@ -26,8 +26,15 @@ type API struct {
 // ContainerExecParams contains details required for connecting to a specific container.
 type ContainerExecParams struct {
 	ContainerName string
-	Command []string
-	User    string
+	Command       []string
+	User          string
+}
+
+type ShellSession struct {
+	InstanceId      string
+	WsUrl           string
+	PortainerApi    *API
+	ShellConnection *websocket.Conn
 }
 
 func (r *API) formatHttpApiUrl() string {
@@ -153,7 +160,7 @@ func (r *API) getContainerId(params *ContainerExecParams) string {
 	return ctn["Id"].(string)
 }
 
-func (r *API) getExecEndpointId(containerId string, params *ContainerExecParams) (string, error) {
+func (r *API) spawnExecInstance(containerId string, params *ContainerExecParams) (string, error) {
 	jsonBodyData := map[string]interface{}{
 		"AttachStdin":  true,
 		"AttachStdout": true,
@@ -179,17 +186,20 @@ func (r *API) getExecEndpointId(containerId string, params *ContainerExecParams)
 	return resp["Id"].(string), nil
 }
 
-func (r *API) getWsUrl(containerId string, params *ContainerExecParams) (string, chan<- TriggerResize) {
-	endpointId, err := r.getExecEndpointId(containerId, params)
+func (r *API) GetExecSessionExitCode(execInstanceId string) (int, error) {
+	req, _ := http.NewRequest("GET", r.formatHttpApiUrl()+"/endpoints/"+strconv.Itoa(r.Endpoint)+"/docker/exec/"+execInstanceId+"/json", bytes.NewReader(nil))
+	resp, err := r.makeObjReq(req, true)
+
 	if err != nil {
-		fmt.Println("Failed to run exec on container: ", err.Error())
-		os.Exit(1)
+		return 0, err
 	}
 
-	resize, _, _ := r.handleTerminalResize(endpointId)
+	return int(resp["ExitCode"].(float64)), nil
+}
 
+func (r *API) getWsUrl(execInstanceId string) string {
 	jwt, _ := r.getJwt()
-	return r.formatWsApiUrl() + "/websocket/exec?token=" + jwt + "&endpointId=1&id=" + endpointId, resize
+	return r.formatWsApiUrl() + "/websocket/exec?token=" + jwt + "&endpointId=1&id=" + execInstanceId
 }
 
 func (r *API) getWSConn(wsUrl string) *websocket.Conn {
@@ -205,16 +215,29 @@ func (r *API) getWSConn(wsUrl string) *websocket.Conn {
 }
 
 // GetContainerConn finds a container to connect, executes a command in it and returns spawned websocket connection.
-func (r *API) GetContainerConn(params *ContainerExecParams) *websocket.Conn {
+func (r *API) GetContainerConn(params *ContainerExecParams) ShellSession {
 	fmt.Println("Searching for container " + params.ContainerName)
 	containerId := r.getContainerId(params)
 	fmt.Println("Getting access token")
-	wsurl, resize := r.getWsUrl(containerId, params)
+	execInstanceId, err := r.spawnExecInstance(containerId, params)
+	if err != nil {
+		fmt.Println("Failed to run exec on container: ", err.Error())
+		os.Exit(1)
+	}
+
+	wsurl := r.getWsUrl(execInstanceId)
+	resize, _, _ := r.handleTerminalResize(execInstanceId)
+
 	fmt.Println("Connecting to a shell ...")
 	conn := r.getWSConn(wsurl)
 
 	// Trigger terminal resize after connection is established.
 	resize <- TriggerResize{}
 
-	return conn
+	return ShellSession{
+		InstanceId:      execInstanceId,
+		WsUrl:           wsurl,
+		PortainerApi:    r,
+		ShellConnection: conn,
+	}
 }

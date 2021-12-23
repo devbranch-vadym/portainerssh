@@ -2,7 +2,7 @@ package main
 
 import (
 	_ "embed"
-	"fmt"
+	"os"
 
 	"github.com/devbranch-vadym/portainerssh/internal/config"
 	"github.com/devbranch-vadym/portainerssh/pkg/portainer"
@@ -22,8 +22,13 @@ func main() {
 	}
 	conn := api.GetContainerConn(params)
 
-	wt := wsterm.NewWebTerm(conn)
+	wt := wsterm.NewWebTerm(conn.ShellConnection)
 	wt.Run()
 
-	fmt.Println("Good bye.")
+	exitCode, err := conn.PortainerApi.GetExecSessionExitCode(conn.InstanceId)
+	if err != nil {
+		panic(err)
+	}
+
+	os.Exit(exitCode)
 }
