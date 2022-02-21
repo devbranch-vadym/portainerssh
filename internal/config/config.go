@@ -91,7 +91,7 @@ func ReadConfig(version string) (*Config, *portainer.ContainerExecParams) {
 		app.Usage(os.Args[1:])
 		os.Exit(1)
 	}
-	
+
 	// TODO: Handle shlex.Split errors
 	commandParts, _ := shlex.Split(*command)
 
