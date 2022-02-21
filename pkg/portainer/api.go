@@ -30,6 +30,7 @@ type ContainerExecParams struct {
 	User          string
 }
 
+// ShellSession contains details about remote shell connected via WebSocket.
 type ShellSession struct {
 	InstanceId      string
 	WsUrl           string
@@ -186,6 +187,7 @@ func (r *API) spawnExecInstance(containerId string, params *ContainerExecParams)
 	return resp["Id"].(string), nil
 }
 
+// GetExecSessionExitCode retrieves exec instance exit code.
 func (r *API) GetExecSessionExitCode(execInstanceId string) (int, error) {
 	req, _ := http.NewRequest("GET", r.formatHttpApiUrl()+"/endpoints/"+strconv.Itoa(r.Endpoint)+"/docker/exec/"+execInstanceId+"/json", bytes.NewReader(nil))
 	resp, err := r.makeObjReq(req, true)

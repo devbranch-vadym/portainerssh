@@ -31,6 +31,7 @@ func (r *API) resizeTerminal(execEndpointId string, size tsize.Size) error {
 	return err
 }
 
+// TriggerResize is a simple Resize event trigger.
 type TriggerResize struct{}
 
 func (r *API) handleTerminalResize(execInstanceId string) (chan<- TriggerResize, <-chan error, error) {
