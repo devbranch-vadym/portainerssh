@@ -1,0 +1,15 @@
+name: GoGitOps 
+on:  
+  pull_request:  
+    branches:  
+    - 'master'  
+jobs:  
+  build:  
+    runs-on: ubuntu-latest  
+    steps:  
+    - uses: actions/checkout@v1
+    - name: GoGitOps Step  
+      id: gogitops  
+      uses: beaujr/gogitops-action@v0.2
+      with:  
+        github-actions-token: ${{secrets.GITHUB_TOKEN}}
