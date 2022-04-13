@@ -8,7 +8,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/kopoli/go-terminal-size v0.0.0-20170219200355-5c97524c8b54
 	github.com/minio/pkg v1.1.20
-	github.com/spf13/viper v1.10.1
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	github.com/spf13/viper v1.11.0
+	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )
