@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.6.1](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.6.0...v1.6.1) (2022-10-28)
+
+
+### Bug Fixes
+
+* endpoint ID hardcoded in WS URL ([53dbfd5](https://www.github.com/devbranch-vadym/portainerssh/commit/53dbfd50f74ca21749609fbabc1761749034b522))
+
 ## [1.6.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.5.0...v1.6.0) (2021-12-23)
 
 
