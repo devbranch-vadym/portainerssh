@@ -199,9 +199,9 @@ func (r *API) GetExecSessionExitCode(execInstanceId string) (int, error) {
 	return int(resp["ExitCode"].(float64)), nil
 }
 
-func (r *API) getWsUrl(execInstanceId string) string {
+func (r *API) getWsUrl(execInstanceId string, endpointId int) string {
 	jwt, _ := r.getJwt()
-	return r.formatWsApiUrl() + "/websocket/exec?token=" + jwt + "&endpointId=1&id=" + execInstanceId
+	return r.formatWsApiUrl() + "/websocket/exec?token=" + jwt + "&endpointId=" + strconv.Itoa(endpointId) + "&id=" + execInstanceId
 }
 
 func (r *API) getWSConn(wsUrl string) *websocket.Conn {
@@ -227,7 +227,7 @@ func (r *API) GetContainerConn(params *ContainerExecParams) ShellSession {
 		os.Exit(1)
 	}
 
-	wsurl := r.getWsUrl(execInstanceId)
+	wsurl := r.getWsUrl(execInstanceId, r.Endpoint)
 	resize, _, _ := r.handleTerminalResize(execInstanceId)
 
 	fmt.Println("Connecting to a shell ...")
