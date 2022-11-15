@@ -19,6 +19,7 @@ func main() {
 		Endpoint: config.Endpoint,
 		User:     config.User,
 		Password: config.Password,
+		ApiKey:   config.ApiKey,
 	}
 	conn := api.GetContainerConn(params)
 

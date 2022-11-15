@@ -31,13 +31,17 @@ Configuration:
         {
             "api_url": "https://portainerssh.server/api",
             "user": "your_access_key",
-            "password": "your_access_password"
+            "password": "your_access_password",
+            "endpoint": 1,
+            "api_key": "my-api-key-here"
         }
 
     If you want to use YAML format, create a config.yml with content:
         api_url: https://your.portainer.server/api
         user: your_access_key
         password: your_access_password
+        endpoint: 1
+        api_key: my-api-key-here
 
     We accept environment variables as well:
         PORTAINER_API_URL=https://your.portainer.server/api
@@ -52,6 +56,7 @@ type Config struct {
 	Endpoint int
 	User     string
 	Password string
+	ApiKey   string
 }
 
 // ReadConfig gathers configuration values from all available sources and returns everything required to connect
@@ -66,6 +71,7 @@ func ReadConfig(version string) (*Config, *portainer.ContainerExecParams) {
 	viper.SetDefault("endpoint", "1")
 	viper.SetDefault("user", "")
 	viper.SetDefault("password", "")
+	viper.SetDefault("api_key", "")
 
 	viper.SetConfigName("config")              // name of config file (without extension)
 	viper.AddConfigPath(".")                   // call multiple times to add many search paths
@@ -80,6 +86,7 @@ func ReadConfig(version string) (*Config, *portainer.ContainerExecParams) {
 	var endpoint = app.Flag("endpoint", "Portainer endpoint ID. Default is 1.").Default(viper.GetString("endpoint")).Int()
 	var user = app.Flag("user", "Portainer API user/accesskey.").Default(viper.GetString("user")).String()
 	var password = app.Flag("password", "Portainer API password/secret.").Default(viper.GetString("password")).String()
+	var apiKey = app.Flag("api_key", "Portainer API key.").Default(viper.GetString("api_key")).String()
 
 	var container = app.Arg("container", "Container name, wildcards allowed").Required().String()
 	var command = app.Flag("command", "Command to execute inside container.").Default("bash").Short('c').String()
@@ -87,7 +94,9 @@ func ReadConfig(version string) (*Config, *portainer.ContainerExecParams) {
 
 	app.Parse(os.Args[1:])
 
-	if *apiUrl == "" || *endpoint == 0 || *user == "" || *password == "" || *container == "" {
+	var hasAuthCredentials = (*user != "" && *password != "") || *apiKey != ""
+
+	if *apiUrl == "" || *endpoint == 0 || !hasAuthCredentials || *container == "" {
 		app.Usage(os.Args[1:])
 		os.Exit(1)
 	}
@@ -100,6 +109,7 @@ func ReadConfig(version string) (*Config, *portainer.ContainerExecParams) {
 			Endpoint: *endpoint,
 			User:     *user,
 			Password: *password,
+			ApiKey:   *apiKey,
 		}, &portainer.ContainerExecParams{
 			ContainerName: *container,
 			Command:       commandParts,

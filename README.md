@@ -41,7 +41,9 @@ If you want to use JSON format, create a `config.json` in the folders with conte
 {
   "api_url": "https://portainerssh.server/api",
   "user": "your_access_key",
-  "password": "your_access_password"
+  "password": "your_access_password",
+  "endpoint": "10",
+  "api_key": "your_api_key"
 }
 ```
 
@@ -52,6 +54,7 @@ api_url: https://your.portainer.server/api
 user: your_access_key
 password: your_access_password
 endpoint: 10 # Optional Portainer endpoint ID, defaults to 1.
+api_key: your_api_key # Optional Portainer API key, defaults to empty. Replaces username and password.
 ```
 
 We accept environment variables as well:
@@ -89,6 +92,7 @@ portainerssh -c /bin/sh my-container-name
       --endpoint=1      Portainer endpoint ID. Default is 1.
       --user=""         Portainer API user/accesskey.
       --password=""     Portainer API password/secret.
+      --api_key=""      Portainer API key.
   -c, --command="bash"  Command to execute inside container.
   -u, --run_as_user=""  User to execute container command as.
 ```
