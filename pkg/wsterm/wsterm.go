@@ -58,7 +58,7 @@ func (w *WebTerm) wsRead() {
 			}
 			return
 		}
-		os.Stdout.Write(raw)
+		os.Stdout.Write(filterZeroBytes(raw))
 	}
 }
 
@@ -94,4 +94,18 @@ func (w *WebTerm) Run() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// filterZeroBytes removes all zero bytes from the given byte array.
+func filterZeroBytes(data []byte) []byte {
+	n := 0
+
+	for _, val := range data {
+		if val != 0 {
+			data[n] = val
+			n++
+		}
+	}
+
+	return data[:n]
 }
