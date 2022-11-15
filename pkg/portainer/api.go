@@ -21,6 +21,7 @@ type API struct {
 	User     string
 	Password string
 	Jwt      string
+	ApiKey   string
 }
 
 // ContainerExecParams contains details required for connecting to a specific container.
@@ -79,11 +80,15 @@ func (r *API) makeReq(req *http.Request, useAuth bool) ([]byte, error) {
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
 	if useAuth {
-		jwt, err := r.getJwt()
-		if err != nil {
-			return nil, err
+		if r.ApiKey != "" {
+			req.Header.Add("X-API-Key", r.ApiKey)
+		} else {
+			jwt, err := r.getJwt()
+			if err != nil {
+				return nil, err
+			}
+			req.Header.Add("Authorization", "Bearer "+jwt)
 		}
-		req.Header.Add("Authorization", "Bearer "+jwt)
 	}
 
 	cli := http.Client{}
@@ -103,6 +108,12 @@ func (r *API) makeReq(req *http.Request, useAuth bool) ([]byte, error) {
 
 func (r *API) getJwt() (string, error) {
 	if r.Jwt == "" {
+		if r.User == "" || r.Password == "" {
+			fmt.Println("Both username and password should be provided for JWT auth.")
+			os.Exit(1)
+		}
+
+		fmt.Println("Retrieving access token")
 		jsonBodyData := map[string]interface{}{
 			"username": r.User,
 			"password": r.Password,
@@ -200,6 +211,13 @@ func (r *API) GetExecSessionExitCode(execInstanceId string) (int, error) {
 }
 
 func (r *API) getWsUrl(execInstanceId string, endpointId int) string {
+	// Newer versions of Portainer uses headers to pass authentication parameters.
+	if r.ApiKey != "" {
+		// The token parameter is not used by Portainer, but it is still required.
+		return r.formatWsApiUrl() + "/websocket/exec?token=&endpointId=" + strconv.Itoa(endpointId) + "&id=" + execInstanceId
+	}
+
+	// Older versions uses token query parameter to pass in the jwt token.
 	jwt, _ := r.getJwt()
 	return r.formatWsApiUrl() + "/websocket/exec?token=" + jwt + "&endpointId=" + strconv.Itoa(endpointId) + "&id=" + execInstanceId
 }
@@ -208,6 +226,19 @@ func (r *API) getWSConn(wsUrl string) *websocket.Conn {
 	apiUrl := r.formatHttpApiUrl()
 	header := http.Header{}
 	header.Add("Origin", apiUrl)
+
+	// Use API key if available, otherwise fall back to JWT.
+	if r.ApiKey != "" {
+		header.Add("X-API-Key", r.ApiKey)
+	} else {
+		jwt, err := r.getJwt()
+		if err != nil {
+			fmt.Println("Failed to communicate with Portainer API: " + err.Error())
+			os.Exit(1)
+		}
+		header.Add("Authorization", "Bearer "+jwt)
+	}
+
 	conn, _, err := websocket.DefaultDialer.Dial(wsUrl, header)
 	if err != nil {
 		fmt.Println("We couldn't connect to this container: ", err.Error())
@@ -220,7 +251,6 @@ func (r *API) getWSConn(wsUrl string) *websocket.Conn {
 func (r *API) GetContainerConn(params *ContainerExecParams) ShellSession {
 	fmt.Println("Searching for container " + params.ContainerName)
 	containerId := r.getContainerId(params)
-	fmt.Println("Getting access token")
 	execInstanceId, err := r.spawnExecInstance(containerId, params)
 	if err != nil {
 		fmt.Println("Failed to run exec on container: ", err.Error())
