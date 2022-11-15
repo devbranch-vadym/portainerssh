@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.7.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.6.1...v1.7.0) (2022-11-15)
+
+
+### Features
+
+* support authenticating in Portainer API with X-API-Key, support Portainer versions >=2.12 ([d1b98be](https://www.github.com/devbranch-vadym/portainerssh/commit/d1b98bec3a3c4cda66adea73b315f2edb20e8dac))
+* support setting working directory from CLI arguments ([305ea25](https://www.github.com/devbranch-vadym/portainerssh/commit/305ea256cdb09c8324683f887a7f89128338c57a))
+
+
+### Bug Fixes
+
+* filter out zero bytes from stdout ([bfa18d9](https://www.github.com/devbranch-vadym/portainerssh/commit/bfa18d96843847b38dc873c0aa7dcd5c88da6918))
+
 ### [1.6.1](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.6.0...v1.6.1) (2022-10-28)
 
 
