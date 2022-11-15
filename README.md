@@ -95,6 +95,7 @@ portainerssh -c /bin/sh my-container-name
       --api_key=""      Portainer API key.
   -c, --command="bash"  Command to execute inside container.
   -u, --run_as_user=""  User to execute container command as.
+  -w, --workdir=""      Working directory to execute command in.
 ```
 
 ### Arguments

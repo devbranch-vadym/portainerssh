@@ -29,6 +29,7 @@ type ContainerExecParams struct {
 	ContainerName string
 	Command       []string
 	User          string
+	WorkingDir    string
 }
 
 // ShellSession contains details about remote shell connected via WebSocket.
@@ -183,6 +184,9 @@ func (r *API) spawnExecInstance(containerId string, params *ContainerExecParams)
 	}
 	if params.User != "" {
 		jsonBodyData["User"] = params.User
+	}
+	if params.WorkingDir != "" {
+		jsonBodyData["WorkingDir"] = params.WorkingDir
 	}
 	body, err := json.Marshal(jsonBodyData)
 	if err != nil {

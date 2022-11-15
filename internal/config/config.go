@@ -91,6 +91,7 @@ func ReadConfig(version string) (*Config, *portainer.ContainerExecParams) {
 	var container = app.Arg("container", "Container name, wildcards allowed").Required().String()
 	var command = app.Flag("command", "Command to execute inside container.").Default("bash").Short('c').String()
 	var runAs = app.Flag("run_as_user", "User to execute container command as.").Default("").Short('u').String()
+	var workdir = app.Flag("workdir", "Working directory to execute command in.").Default("").Short('w').String()
 
 	app.Parse(os.Args[1:])
 
@@ -114,6 +115,7 @@ func ReadConfig(version string) (*Config, *portainer.ContainerExecParams) {
 			ContainerName: *container,
 			Command:       commandParts,
 			User:          *runAs,
+			WorkingDir:    *workdir,
 		}
 
 }
