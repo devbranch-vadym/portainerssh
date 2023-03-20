@@ -855,8 +855,8 @@ github.com/minio/madmin-go/v2 v2.0.15/go.mod h1:8bL1RMNkblIENFSgGYjeHrzUx9PxROb7
 github.com/minio/md5-simd v1.1.2/go.mod h1:MzdKDxYpY2BT9XQFocsiZf/NKVtR7nkE4RoEpN+20RM=
 github.com/minio/minio-go/v7 v7.0.49/go.mod h1:UI34MvQEiob3Cf/gGExGMmzugkM/tNgbFypNDy5LMVc=
 github.com/minio/mux v1.8.2/go.mod h1:1pAare17ZRL5GpmNL+9YmqHoWnLmMZF9C/ioUCfy0BQ=
-github.com/minio/pkg v1.6.4 h1:k6XlhyJ8zOn90PI4csuMeePx7BQrcX1jorKriR5J2fo=
-github.com/minio/pkg v1.6.4/go.mod h1:0iX1IuJGSCnMvIvrEJauk1GgQSX9JdU6Kh0P3EQRGkI=
+github.com/minio/pkg v1.6.5 h1:T9cRNcCLJTFFgQGH0Rzr1CtAWLAIchTsbE0lSztCf40=
+github.com/minio/pkg v1.6.5/go.mod h1:0iX1IuJGSCnMvIvrEJauk1GgQSX9JdU6Kh0P3EQRGkI=
 github.com/minio/sha256-simd v1.0.0/go.mod h1:OuYzVNI5vcoYIAmbIvHPl3N3jUzVedXbKy5RFepssQM=
 github.com/mitchellh/cli v1.0.0/go.mod h1:hNIlj7HEI86fIcpObd7a0FcrxTWetlwJDGcceTlRvqc=
 github.com/mitchellh/cli v1.1.0/go.mod h1:xcISNoH86gajksDmfB23e/pu+B+GeFRMYmoHXxx3xhI=
