@@ -63,6 +63,7 @@ We accept environment variables as well:
 PORTAINER_API_URL=https://your.portainer.server/api
 PORTAINER_USER=your_access_key
 PORTAINER_PASSWORD=your_access_password
+PORTAINER_API_KEY=your_access_token
 ```
 
 ## Usage
