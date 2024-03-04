@@ -9,6 +9,6 @@ require (
 	github.com/kopoli/go-terminal-size v0.0.0-20170219200355-5c97524c8b54
 	github.com/minio/pkg v1.7.5
 	github.com/spf13/viper v1.18.2
-	golang.org/x/crypto v0.20.0
+	golang.org/x/crypto v0.21.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )
