@@ -57,6 +57,7 @@ type Config struct {
 	User     string
 	Password string
 	ApiKey   string
+	Quiet    bool
 }
 
 // ReadConfig gathers configuration values from all available sources and returns everything required to connect
@@ -72,6 +73,7 @@ func ReadConfig(version string) (*Config, *portainer.ContainerExecParams) {
 	viper.SetDefault("user", "")
 	viper.SetDefault("password", "")
 	viper.SetDefault("api_key", "")
+	viper.SetDefault("quiet", "false")
 
 	viper.SetConfigName("config")              // name of config file (without extension)
 	viper.AddConfigPath(".")                   // call multiple times to add many search paths
@@ -87,6 +89,7 @@ func ReadConfig(version string) (*Config, *portainer.ContainerExecParams) {
 	var user = app.Flag("user", "Portainer API user/accesskey.").Default(viper.GetString("user")).String()
 	var password = app.Flag("password", "Portainer API password/secret.").Default(viper.GetString("password")).String()
 	var apiKey = app.Flag("api_key", "Portainer API key.").Default(viper.GetString("api_key")).String()
+	var quiet = app.Flag("quiet", "Do not print informational messages.").Default(viper.GetString("quiet")).Short('q').Bool()
 
 	var container = app.Arg("container", "Container name, wildcards allowed").Required().String()
 	var command = app.Flag("command", "Command to execute inside container.").Default("bash").Short('c').String()
@@ -111,6 +114,7 @@ func ReadConfig(version string) (*Config, *portainer.ContainerExecParams) {
 			User:     *user,
 			Password: *password,
 			ApiKey:   *apiKey,
+			Quiet:    *quiet,
 		}, &portainer.ContainerExecParams{
 			ContainerName: *container,
 			Command:       commandParts,

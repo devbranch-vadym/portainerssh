@@ -20,6 +20,7 @@ func main() {
 		User:     config.User,
 		Password: config.Password,
 		ApiKey:   config.ApiKey,
+		Quiet:    config.Quiet,
 	}
 	conn := api.GetContainerConn(params)
 

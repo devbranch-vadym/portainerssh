@@ -22,6 +22,7 @@ type API struct {
 	Password string
 	Jwt      string
 	ApiKey   string
+	Quiet    bool
 }
 
 // ContainerExecParams contains details required for connecting to a specific container.
@@ -114,7 +115,9 @@ func (r *API) getJwt() (string, error) {
 			os.Exit(1)
 		}
 
-		fmt.Println("Retrieving access token")
+		if !r.Quiet {
+			fmt.Println("Retrieving access token")
+		}
 		jsonBodyData := map[string]interface{}{
 			"username": r.User,
 			"password": r.Password,
@@ -169,7 +172,9 @@ func (r *API) getContainerId(params *ContainerExecParams) string {
 		fmt.Scan(&choice)
 	}
 	ctn := data[choice-1]
-	fmt.Println(fmt.Sprintf("Target Container: %s, ID %s", ctn["Names"].([]interface{})[0].(string), ctn["Id"].(string)))
+	if !r.Quiet {
+		fmt.Println(fmt.Sprintf("Target Container: %s, ID %s", ctn["Names"].([]interface{})[0].(string), ctn["Id"].(string)))
+	}
 	return ctn["Id"].(string)
 }
 
@@ -253,7 +258,9 @@ func (r *API) getWSConn(wsUrl string) *websocket.Conn {
 
 // GetContainerConn finds a container to connect, executes a command in it and returns spawned websocket connection.
 func (r *API) GetContainerConn(params *ContainerExecParams) ShellSession {
-	fmt.Println("Searching for container " + params.ContainerName)
+	if !r.Quiet {
+		fmt.Println("Searching for container " + params.ContainerName)
+	}
 	containerId := r.getContainerId(params)
 	execInstanceId, err := r.spawnExecInstance(containerId, params)
 	if err != nil {
@@ -264,7 +271,9 @@ func (r *API) GetContainerConn(params *ContainerExecParams) ShellSession {
 	wsurl := r.getWsUrl(execInstanceId, r.Endpoint)
 	resize, _, _ := r.handleTerminalResize(execInstanceId)
 
-	fmt.Println("Connecting to a shell ...")
+	if !r.Quiet {
+		fmt.Println("Connecting to a shell ...")
+	}
 	conn := r.getWSConn(wsurl)
 
 	// Trigger terminal resize after connection is established.
