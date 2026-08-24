@@ -94,6 +94,7 @@ portainerssh -c /bin/sh my-container-name
       --user=""         Portainer API user/accesskey.
       --password=""     Portainer API password/secret.
       --api_key=""      Portainer API key.
+  -q, --quiet           Do not print informational messages.
   -c, --command="bash"  Command to execute inside container.
   -u, --run_as_user=""  User to execute container command as.
   -w, --workdir=""      Working directory to execute command in.
