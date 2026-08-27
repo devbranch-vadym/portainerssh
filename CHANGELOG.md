@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.7.0...v1.8.0) (2026-08-27)
+
+
+### Features
+
+* add -q/--quiet flag to suppress informational messages ([030d370](https://www.github.com/devbranch-vadym/portainerssh/commit/030d370970e62b88e806404a5f0c91546cda1737))
+
 ## [1.7.0](https://www.github.com/devbranch-vadym/portainerssh/compare/v1.6.1...v1.7.0) (2022-11-15)
 
 
